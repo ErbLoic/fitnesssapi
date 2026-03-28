@@ -12,6 +12,12 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(1),
+  age: z.number().int().min(13).max(120).optional(),
+  heightCm: z.number().positive().max(300).optional(),
+  weightKg: z.number().positive().max(500).optional(),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  dailyStepsGoal: z.number().int().min(1000).max(100000).optional(),
+  fitnessLevel: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
 });
 
 const loginSchema = z.object({
@@ -25,7 +31,7 @@ router.post('/register', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: 'VALIDATION_ERROR', message: parsed.error.errors[0].message });
   }
-  const { email, password, name } = parsed.data;
+  const { email, password, name, age, heightCm, weightKg, gender, dailyStepsGoal, fitnessLevel } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -34,7 +40,18 @@ router.post('/register', async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
-    data: { email, passwordHash, name, settings: { create: {} } },
+    data: {
+      email,
+      passwordHash,
+      name,
+      ...(age !== undefined && { age }),
+      ...(heightCm !== undefined && { heightCm }),
+      ...(weightKg !== undefined && { weightKg }),
+      ...(gender !== undefined && { gender }),
+      ...(dailyStepsGoal !== undefined && { dailyStepsGoal }),
+      ...(fitnessLevel !== undefined && { fitnessLevel }),
+      settings: { create: {} },
+    },
   });
 
   const accessToken = issueAccessToken(user);
