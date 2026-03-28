@@ -262,23 +262,126 @@
     .reveal-right { opacity: 0; transform: translateX(40px); transition: opacity .7s ease, transform .7s ease; }
     .reveal-right.visible { opacity: 1; transform: translateX(0); }
 
-    /* ── Responsive ────────────────────────────────────────────── */
-    @media (max-width: 900px) {
-      .hero { flex-direction: column; padding-top: 7rem; text-align: center; }
+    /* ── Responsive tablette ───────────────────────────────────── */
+    @media (max-width: 960px) {
+      .nav-links .hide-mobile { display: none; }
+
+      /* Hero : colonne, texte centré, téléphones en dessous */
+      .hero {
+        flex-direction: column;
+        padding: 7rem 1.5rem 4rem;
+        text-align: center;
+        gap: 3rem;
+      }
+      .hero-content { max-width: 100%; }
       .hero p { margin-left: auto; margin-right: auto; }
       .hero-btns { justify-content: center; }
-      .feat-row { grid-template-columns: 1fr; gap: 3rem; }
+      .hero-phone-wrap { width: 100%; }
+      .scroll-hint { display: none; }
+
+      /* Téléphones hero plus petits */
+      .phone-frame.hero-phone  { width: 200px; }
+      .phone-frame.hero-phone-2 { width: 170px; }
+
+      /* Features : colonne, image en haut */
+      .feat-row {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+        margin-bottom: 5rem;
+      }
       .feat-row.reverse { direction: ltr; }
-      .stats-inner { grid-template-columns: repeat(2,1fr); }
-      .badge-grid { grid-template-columns: repeat(2,1fr); }
-      .args-grid { grid-template-columns: repeat(2,1fr); }
-      .nav-links .hide-mobile { display: none; }
+      /* Image toujours en premier sur tablette */
+      .feat-row > div:last-child { order: -1; }
+      .feat-row.reverse > div:last-child { order: -1; }
+
+      /* Stats 2 colonnes */
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+
+      /* Badges 2 colonnes */
+      .badge-grid { grid-template-columns: repeat(2, 1fr); max-width: 500px; }
+
+      /* Args 2 colonnes */
+      .args-grid { grid-template-columns: repeat(2, 1fr); }
+
+      /* Phone duo : centré, moins haut */
+      .phone-duo { height: 400px; }
+      .phone-duo .phone-frame.main { width: 190px; }
+      .phone-duo .phone-frame.secondary { width: 165px; }
+
+      /* Sections padding réduit */
+      .section { padding: 4rem 1.5rem; }
+      .badges-section { padding: 4rem 1.5rem; }
+      .args-section { padding: 4rem 1.5rem; }
+      .cta-section { padding: 4rem 1.5rem; }
+      .cta-inner { padding: 3rem 1.5rem; }
     }
+
+    /* ── Responsive mobile ─────────────────────────────────────── */
     @media (max-width: 600px) {
-      nav { padding: .9rem 1.2rem; }
-      .args-grid { grid-template-columns: 1fr; }
-      .badge-grid { grid-template-columns: repeat(2,1fr); }
-      .footer-inner { flex-direction: column; text-align: center; }
+      nav { padding: .85rem 1rem; }
+      .nav-brand { font-size: 1.1rem; }
+
+      /* Hero compact */
+      .hero { padding: 6rem 1rem 3rem; gap: 2rem; }
+      .hero h1 { font-size: 2.4rem; letter-spacing: -1px; }
+      .hero p { font-size: 1rem; }
+      .hero-btns { flex-direction: column; align-items: center; gap: .75rem; }
+      .btn-store { width: 100%; max-width: 280px; justify-content: center; }
+
+      /* Un seul téléphone dans le hero */
+      .phone-frame.hero-phone  { width: 200px; transform: rotate(-3deg); }
+      .phone-frame.hero-phone-2 { display: none; }
+
+      /* Stats 2x2 */
+      .stats-inner { grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+      .stat-num { font-size: 2rem; }
+
+      /* Feat rows */
+      .section { padding: 3rem 1rem; }
+      .feat-title { font-size: 1.6rem; }
+      .feat-pills { gap: .4rem; }
+      .pill { font-size: .775rem; padding: .3rem .7rem; }
+
+      /* Phone dans features centré et adapté */
+      .phone-frame[style*="width:240px"] { width: 200px !important; }
+      .phone-frame[style*="width:230px"] { width: 195px !important; }
+
+      /* Phone duo mobile */
+      .phone-duo { height: 340px; }
+      .phone-duo .phone-frame.main  { width: 170px; transform: translateX(-55%); }
+      .phone-duo .phone-frame.secondary { width: 150px; transform: translateX(5%) translateY(30px) rotate(5deg); }
+
+      /* Badges */
+      .badges-section { padding: 3rem 1rem; }
+      .badge-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem; max-width: 100%; }
+      .badge-card { padding: 1rem .75rem; }
+      .badge-card .icon { font-size: 1.5rem; }
+      .phone-frame[style*="width:260px"] { width: 200px !important; }
+
+      /* Args 1 colonne */
+      .args-section { padding: 3rem 1rem; }
+      .args-grid { grid-template-columns: 1fr; gap: .75rem; }
+      .arg-card { padding: 1.25rem 1rem; }
+
+      /* CTA */
+      .cta-section { padding: 3rem 1rem; }
+      .cta-inner { padding: 2.5rem 1rem; border-radius: 16px; }
+      .cta-title { font-size: 1.8rem; }
+      .cta-btns { flex-direction: column; align-items: center; }
+      .cta-btns .btn-store { width: 100%; max-width: 280px; justify-content: center; }
+
+      /* Footer */
+      footer { padding: 2rem 1rem 1.5rem; }
+      .footer-inner { flex-direction: column; align-items: center; text-align: center; gap: 1rem; }
+      .footer-links { justify-content: center; gap: 1rem; flex-direction: column; align-items: center; }
+    }
+
+    /* ── Très petit mobile (≤380px) ────────────────────────────── */
+    @media (max-width: 380px) {
+      .hero h1 { font-size: 2rem; }
+      .phone-frame.hero-phone { width: 170px; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .stat-num { font-size: 1.75rem; }
     }
   </style>
 </head>
@@ -316,7 +419,12 @@
         <div><span class="btn-sub">Télécharger sur</span><span class="btn-main">App Store</span></div>
       </a>
       <a href="/fitnesspro.apk" download class="btn-store btn-store-orange">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.3.17.64.24.99.2l12.43-12.43L13 8l-9.82 15.76zM20.7 10.37l-2.87-1.62-3.27 3.27 3.27 3.27 2.9-1.64c.83-.47.83-1.81-.03-2.28zM2.13 1.28C2.05 1.5 2 1.75 2 2.04v19.92c0 .28.04.53.13.75L14.56 10 2.13 1.28zM16.31 5.65L3.88.2c-.35-.04-.69.03-.99.2L16.31 13.6 19.58 10 16.31 5.65z"/></svg>
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.5 2.8C1.5 2.1 1.9 1.5 2.5 1.2L13.1 12 2.5 22.8C1.9 22.5 1.5 21.9 1.5 21.2V2.8Z" fill="#EA4335"/>
+          <path d="M17.5 8.2L4.9 1 14 10.1 17.5 8.2Z" fill="#FBBC05"/>
+          <path d="M22 12C22 12.8 21.6 13.5 21 13.9L17.5 15.8 14 12 17.5 8.2 21 10.1C21.6 10.5 22 11.2 22 12Z" fill="#FFCD40"/>
+          <path d="M4.9 23L17.5 15.8 14 12 4.9 23Z" fill="#00C853"/>
+        </svg>
         <div><span class="btn-sub">Télécharger l'</span><span class="btn-main">APK Android</span></div>
       </a>
     </div>
