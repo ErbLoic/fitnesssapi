@@ -100,30 +100,66 @@
     /* ── Phone frame ───────────────────────────────────────────── */
     .phone-frame {
       width: 260px;
-      border-radius: var(--r-phone);
-      border: 2px solid var(--border);
-      background: #0a0a18;
+      border-radius: 48px;
+      background: #060610;
       overflow: hidden;
       position: relative;
-      box-shadow: 0 0 0 1px rgba(255,107,0,.1), 0 0 60px rgba(255,107,0,.2), 0 40px 100px rgba(0,0,0,.8);
       flex-shrink: 0;
+      /* Bezel multi-couche : simule le corps du téléphone */
+      box-shadow:
+        0 0 0 2px #1e1e32,
+        0 0 0 5px #14142a,
+        0 0 0 7px #252542,
+        0 0 0 8px rgba(255,255,255,.04),
+        0 60px 130px rgba(0,0,0,.9),
+        0 0 80px rgba(255,107,0,.18);
     }
     .phone-frame.hero-phone {
-      width: 280px;
+      width: 285px;
       transform: rotate(-6deg) translateY(-20px);
       animation: phonePulse 4s ease-in-out infinite, fadeUp .9s ease .4s both;
     }
     .phone-frame.hero-phone-2 {
-      width: 240px;
+      width: 245px;
       transform: rotate(4deg) translateY(30px) translateX(-30px);
       animation: phonePulse2 4s ease-in-out infinite, fadeUp .9s ease .55s both;
-      box-shadow: 0 0 40px rgba(255,107,0,.1), 0 30px 80px rgba(0,0,0,.7);
+      box-shadow:
+        0 0 0 2px #1e1e32,
+        0 0 0 5px #14142a,
+        0 0 0 7px #252542,
+        0 0 0 8px rgba(255,255,255,.03),
+        0 40px 100px rgba(0,0,0,.85),
+        0 0 50px rgba(255,107,0,.1);
     }
+    /* Dynamic Island */
     .phone-frame::before {
-      content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-      width: 60px; height: 6px; background: var(--border); border-radius: 3px; z-index: 10;
+      content: '';
+      position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+      width: 90px; height: 24px;
+      background: #000;
+      border-radius: 14px;
+      z-index: 20;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06), inset 0 1px 4px rgba(0,0,0,.9);
     }
-    .phone-frame img { width: 100%; display: block; }
+    /* Home indicator */
+    .phone-frame::after {
+      content: '';
+      position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+      width: 100px; height: 4px;
+      background: rgba(255,255,255,.22);
+      border-radius: 2px;
+      z-index: 20;
+    }
+    /* Reflet écran */
+    .phone-frame img {
+      width: 100%; display: block;
+      position: relative; z-index: 1;
+    }
+    .phone-frame .screen-glare {
+      position: absolute; inset: 0; z-index: 5; pointer-events: none;
+      background: linear-gradient(135deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.01) 40%, transparent 60%);
+      border-radius: 48px;
+    }
 
     .phones-group { display: flex; justify-content: center; align-items: flex-end; gap: 0; position: relative; }
 
@@ -289,9 +325,11 @@
   <div class="hero-phone-wrap">
     <div class="phones-group">
       <div class="phone-frame hero-phone">
+        <div class="screen-glare"></div>
         <img src="/image/pA.png" alt="Dashboard FitnessPro">
       </div>
       <div class="phone-frame hero-phone-2">
+        <div class="screen-glare"></div>
         <img src="/image/entrainementA.png" alt="Entraînements FitnessPro">
       </div>
     </div>
@@ -341,6 +379,7 @@
       </div>
       <div class="reveal-right" style="display:flex; justify-content:center;">
         <div class="phone-frame" style="width:240px;">
+          <div class="screen-glare"></div>
           <img src="/image/entrainementA.png" alt="Liste exercices">
         </div>
       </div>
@@ -364,9 +403,11 @@
         <div class="reveal-left" style="display:flex; justify-content:center;">
           <div class="phone-duo">
             <div class="phone-frame main" style="width:230px;">
+              <div class="screen-glare"></div>
               <img src="/image/repetpoids.png" alt="Saisie reps/poids">
             </div>
             <div class="phone-frame secondary">
+              <div class="screen-glare"></div>
               <img src="/image/repos.png" alt="Timer repos">
             </div>
           </div>
@@ -391,6 +432,7 @@
       </div>
       <div class="reveal-right" style="display:flex; justify-content:center;">
         <div class="phone-frame" style="width:240px;">
+          <div class="screen-glare"></div>
           <img src="/image/course.png" alt="Course GPS">
         </div>
       </div>
@@ -413,6 +455,7 @@
         </div>
         <div class="reveal-left" style="display:flex; justify-content:center;">
           <div class="phone-frame" style="width:240px;">
+            <div class="screen-glare"></div>
             <img src="/image/graphpoids.png" alt="Graphique poids">
           </div>
         </div>
@@ -436,6 +479,7 @@
       </div>
       <div class="reveal-right" style="display:flex; justify-content:center;">
         <div class="phone-frame" style="width:240px;">
+          <div class="screen-glare"></div>
           <img src="/image/amis.png" alt="Social amis">
         </div>
       </div>
@@ -487,7 +531,8 @@
   </div>
 
   <div class="badges-phone reveal">
-    <div class="phone-frame" style="width:260px; box-shadow: 0 0 80px rgba(255,184,0,.25), 0 40px 100px rgba(0,0,0,.8);">
+    <div class="phone-frame" style="width:260px; box-shadow: 0 0 0 2px #1e1e32, 0 0 0 5px #14142a, 0 0 0 7px #252542, 0 0 0 8px rgba(255,255,255,.04), 0 60px 130px rgba(0,0,0,.9), 0 0 100px rgba(255,184,0,.25);">
+      <div class="screen-glare"></div>
       <img src="/image/badge.png" alt="Badges débloqués">
     </div>
   </div>
