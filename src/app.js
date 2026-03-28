@@ -1,9 +1,7 @@
 const express = require('express');
 const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session);
 const passport = require('passport');
 const path = require('path');
-const { Pool } = require('pg');
 
 require('./config/passport');
 
@@ -17,24 +15,18 @@ app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// ── Session (admin panel) ─────────────────────────────────────────
-// SESSION_DATABASE_URL doit pointer vers le Transaction Pooler Supabase
-// (IPv4, port 6543) sur Render. En local, DATABASE_URL suffit.
-const pgPool = new Pool({
-  connectionString: process.env.SESSION_DATABASE_URL || process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
-
-pgPool.on('error', (err) => {
-  console.error('pg session pool error (non-fatal):', err.message);
-});
-
+// ── Session admin (mémoire — pas de dépendance pg externe) ───────
+// Les sessions admin sont éphémères : si le serveur redémarre,
+// l'admin doit se reconnecter. Parfait pour Render Free.
 app.use(session({
-  store: new pgSession({ pool: pgPool, tableName: 'session', createTableIfMissing: true }),
   secret: process.env.ADMIN_SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, maxAge: 8 * 60 * 60 * 1000 }, // 8h
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 8 * 60 * 60 * 1000, // 8h
+  },
 }));
 
 // ── Passport ──────────────────────────────────────────────────────
@@ -56,8 +48,9 @@ app.use('/app',      require('./routes/appConfig'));
 app.use('/admin', require('./routes/admin/index'));
 
 // ── Global error handler ──────────────────────────────────────────
-app.use((err, req, res, next) => {
+app.use((err, _req, res, _next) => {
   console.error(err);
+  if (res.headersSent) return;
   res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Erreur interne du serveur' });
 });
 
