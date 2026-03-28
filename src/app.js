@@ -18,7 +18,16 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // ── Session (admin panel) ─────────────────────────────────────────
-const pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
+// SESSION_DATABASE_URL doit pointer vers le Transaction Pooler Supabase
+// (IPv4, port 6543) sur Render. En local, DATABASE_URL suffit.
+const pgPool = new Pool({
+  connectionString: process.env.SESSION_DATABASE_URL || process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+pgPool.on('error', (err) => {
+  console.error('pg session pool error (non-fatal):', err.message);
+});
 
 app.use(session({
   store: new pgSession({ pool: pgPool, tableName: 'session', createTableIfMissing: true }),
