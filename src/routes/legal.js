@@ -15,4 +15,9 @@ router.get('/terms', (req, res) => {
   res.render('terms');
 });
 
+// GET /data-deletion — requis par Facebook/Meta OAuth
+router.get('/data-deletion', (req, res) => {
+  res.render('data-deletion');
+});
+
 module.exports = router;

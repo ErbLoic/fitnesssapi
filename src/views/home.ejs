@@ -4,101 +4,139 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FitnessPro — Application de suivi fitness</title>
+  <meta name="description" content="FitnessPro est une application mobile de suivi fitness — entraînements, course à pied, pas quotidiens, nutrition et bien plus.">
+  <meta name="google-site-verification" content="deUziBWQNmrnH_hnALtVoQN2L4Mn8dB7TJGeORzvj3Y" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
-    .hero { padding: 5rem 1rem 3rem; text-align: center; }
-    .hero h1 { font-size: 3rem; font-weight: 800; color: #fff; }
-    .hero h1 span { color: #0d6efd; }
-    .hero p.lead { color: #8b949e; font-size: 1.15rem; max-width: 580px; margin: 1rem auto; }
-    .badge-pill { background: #161b22; border: 1px solid #30363d; color: #8b949e; border-radius: 50px; padding: .35rem .9rem; font-size: .85rem; display: inline-block; margin: .25rem; }
-    .features { background: #161b22; border-radius: 16px; padding: 2.5rem; margin: 3rem auto; max-width: 900px; }
-    .feature-item { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem; }
-    .feature-icon { font-size: 1.8rem; flex-shrink: 0; }
-    .feature-text h5 { color: #fff; margin-bottom: .25rem; }
-    .feature-text p { color: #8b949e; margin: 0; font-size: .95rem; }
-    .footer-links { text-align: center; padding: 2rem 1rem 3rem; }
-    .footer-links a { color: #8b949e; text-decoration: none; margin: 0 1rem; font-size: .9rem; }
-    .footer-links a:hover { color: #fff; }
-    .api-badge { background: #0d6efd22; border: 1px solid #0d6efd55; color: #58a6ff; border-radius: 8px; padding: .5rem 1.2rem; font-family: monospace; font-size: .85rem; display: inline-block; margin-top: .5rem; }
-    hr { border-color: #30363d; }
+    :root {
+      --bg: #080c12;
+      --surface: #0f1520;
+      --surface2: #161d2e;
+      --border: #1e2d45;
+      --blue: #3b82f6;
+      --blue-glow: rgba(59,130,246,.15);
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+    /* NAV */
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(8,12,18,.85); backdrop-filter: blur(12px); z-index: 100; }
+    .nav-brand { font-weight: 800; font-size: 1.25rem; color: #fff; letter-spacing: -.5px; }
+    .nav-brand span { color: var(--blue); }
+    .nav-links a { color: var(--muted); text-decoration: none; margin-left: 1.5rem; font-size: .9rem; transition: color .2s; }
+    .nav-links a:hover { color: #fff; }
+
+    /* HERO */
+    .hero { text-align: center; padding: 7rem 1.5rem 5rem; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(59,130,246,.12) 0%, transparent 70%); pointer-events: none; }
+    .hero-tag { display: inline-block; background: var(--blue-glow); border: 1px solid rgba(59,130,246,.3); color: var(--blue); border-radius: 50px; padding: .35rem 1rem; font-size: .8rem; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 1.5rem; }
+    .hero h1 { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 800; line-height: 1.1; color: #fff; letter-spacing: -1.5px; }
+    .hero h1 span { background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero p { color: var(--muted); font-size: 1.1rem; max-width: 520px; margin: 1.5rem auto 2.5rem; line-height: 1.7; }
+    .hero-url { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .6rem 1.4rem; font-family: 'Courier New', monospace; font-size: .85rem; color: #94a3b8; display: inline-block; }
+    .hero-url span { color: var(--blue); }
+
+    /* FEATURES */
+    .section { padding: 4rem 1.5rem; max-width: 960px; margin: 0 auto; }
+    .section-title { font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: .5rem; }
+    .section-sub { color: var(--muted); font-size: .95rem; margin-bottom: 2.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; transition: border-color .2s, transform .2s; }
+    .card:hover { border-color: rgba(59,130,246,.4); transform: translateY(-2px); }
+    .card-icon { font-size: 1.75rem; margin-bottom: 1rem; }
+    .card h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: .4rem; }
+    .card p { font-size: .875rem; color: var(--muted); line-height: 1.6; }
+
+    /* AUTH SECTION */
+    .auth-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2.5rem; text-align: center; margin: 0 auto 4rem; max-width: 960px; }
+    .auth-section h2 { font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: .5rem; }
+    .auth-section p { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; }
+    .auth-pills { display: flex; justify-content: center; flex-wrap: wrap; gap: .75rem; }
+    .auth-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: .5rem 1.2rem; font-size: .875rem; color: var(--text); display: flex; align-items: center; gap: .5rem; }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 2rem 1.5rem; text-align: center; }
+    footer p { color: var(--muted); font-size: .85rem; margin-bottom: .75rem; }
+    footer a { color: var(--muted); text-decoration: none; margin: 0 .75rem; font-size: .85rem; transition: color .2s; }
+    footer a:hover { color: #fff; }
   </style>
-  <meta name="google-site-verification" content="deUziBWQNmrnH_hnALtVoQN2L4Mn8dB7TJGeORzvj3Y" />
 </head>
 <body>
 
-<div class="hero">
-  <div class="mb-3">
-    <span class="badge-pill">🏋️ Fitness Tracker</span>
-    <span class="badge-pill">📱 Application Mobile</span>
-    <span class="badge-pill">🔒 RGPD</span>
+<nav>
+  <div class="nav-brand"><span>Fitness</span>Pro</div>
+  <div class="nav-links">
+    <a href="/privacy">Confidentialité</a>
+    <a href="/terms">CGU</a>
+    <a href="/data-deletion">Suppression</a>
   </div>
-  <h1><span>FitnessPro</span></h1>
-  <p class="lead">
-    Application mobile de suivi fitness complète — entraînements, course à pied, pas quotidiens, poids, nutrition et bien plus.
-  </p>
-  <div class="api-badge">https://fitnesssapi.onrender.com</div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">Application Mobile Fitness</div>
+  <h1>Suivez chaque<br><span>performance</span></h1>
+  <p>FitnessPro vous aide à enregistrer vos entraînements, courses, pas quotidiens et mesures corporelles pour atteindre vos objectifs.</p>
+  <div class="hero-url"><span>fitnesssapi</span>.onrender.com</div>
 </div>
 
-<div class="features">
-  <div class="feature-item">
-    <div class="feature-icon">🏋️</div>
-    <div class="feature-text">
-      <h5>Suivi des entraînements</h5>
-      <p>Enregistrez vos séances de musculation, exercices, séries et répétitions. Suivez votre progression et vos records personnels.</p>
+<div class="section">
+  <div class="section-title">Fonctionnalités</div>
+  <div class="section-sub">Tout ce dont vous avez besoin pour suivre votre progression.</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-icon">🏋️</div>
+      <h3>Entraînements</h3>
+      <p>Enregistrez vos séances de musculation, exercices, séries et répétitions. Suivez vos records personnels.</p>
     </div>
-  </div>
-  <div class="feature-item">
-    <div class="feature-icon">🏃</div>
-    <div class="feature-text">
-      <h5>Course à pied & GPS</h5>
+    <div class="card">
+      <div class="card-icon">🏃</div>
+      <h3>Course & GPS</h3>
       <p>Tracez vos sessions de course avec données GPS, distance, vitesse, dénivelé et fréquence cardiaque.</p>
     </div>
-  </div>
-  <div class="feature-item">
-    <div class="feature-icon">👣</div>
-    <div class="feature-text">
-      <h5>Compteur de pas</h5>
+    <div class="card">
+      <div class="card-icon">👣</div>
+      <h3>Pas quotidiens</h3>
       <p>Suivez votre activité quotidienne, vos objectifs de pas et vos calories brûlées heure par heure.</p>
     </div>
-  </div>
-  <div class="feature-item">
-    <div class="feature-icon">⚖️</div>
-    <div class="feature-text">
-      <h5>Suivi du poids & mesures corporelles</h5>
-      <p>Enregistrez votre poids, votre IMC et vos mesures corporelles pour visualiser votre évolution dans le temps.</p>
+    <div class="card">
+      <div class="card-icon">⚖️</div>
+      <h3>Poids & Mesures</h3>
+      <p>Enregistrez votre poids et vos mesures corporelles pour visualiser votre évolution dans le temps.</p>
     </div>
-  </div>
-  <div class="feature-item">
-    <div class="feature-icon">🏆</div>
-    <div class="feature-text">
-      <h5>Badges & défis</h5>
+    <div class="card">
+      <div class="card-icon">🏆</div>
+      <h3>Badges & Défis</h3>
       <p>Débloquez des badges en atteignant vos objectifs et participez à des défis avec la communauté.</p>
     </div>
-  </div>
-  <div class="feature-item">
-    <div class="feature-icon">💬</div>
-    <div class="feature-text">
-      <h5>Messagerie & partage</h5>
+    <div class="card">
+      <div class="card-icon">💬</div>
+      <h3>Messagerie</h3>
       <p>Échangez avec d'autres utilisateurs et partagez vos séances directement dans la conversation.</p>
     </div>
   </div>
 </div>
 
-<div style="text-align:center; padding: 0 1rem 2rem;">
-  <h5 style="color:#8b949e; font-weight:400;">Connexion sécurisée via</h5>
-  <span class="badge-pill">Google</span>
-  <span class="badge-pill">GitHub</span>
-  <span class="badge-pill">Facebook</span>
-  <span class="badge-pill">Email / Mot de passe</span>
+<div class="auth-section">
+  <h2>Connexion sécurisée</h2>
+  <p>Connectez-vous avec votre compte existant ou créez un compte avec votre email.</p>
+  <div class="auth-pills">
+    <div class="auth-pill">🔵 Google</div>
+    <div class="auth-pill">⚫ GitHub</div>
+    <div class="auth-pill">🔷 Facebook</div>
+    <div class="auth-pill">✉️ Email / Mot de passe</div>
+  </div>
 </div>
 
-<hr style="max-width:900px; margin:auto;">
-
-<div class="footer-links">
-  <a href="/privacy">Politique de confidentialité</a>
-  <a href="/terms">Conditions d'utilisation</a>
-</div>
+<footer>
+  <p>© 2026 FitnessPro. Tous droits réservés.</p>
+  <div>
+    <a href="/privacy">Politique de confidentialité</a>
+    <a href="/terms">Conditions d'utilisation</a>
+    <a href="/data-deletion">Suppression des données</a>
+  </div>
+</footer>
 
 </body>
 </html>

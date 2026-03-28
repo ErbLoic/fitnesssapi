@@ -1,0 +1,42 @@
+  <style>
+    :root {
+      --bg: #080c12;
+      --surface: #0f1520;
+      --surface2: #161d2e;
+      --border: #1e2d45;
+      --blue: #3b82f6;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 2rem; border-bottom: 1px solid var(--border); }
+    .nav-brand { font-weight: 800; font-size: 1.2rem; color: #fff; text-decoration: none; }
+    .nav-brand span { color: var(--blue); }
+    .nav-links a { color: var(--muted); text-decoration: none; margin-left: 1.5rem; font-size: .875rem; transition: color .2s; }
+    .nav-links a:hover { color: #fff; }
+
+    .page-wrap { max-width: 780px; margin: 3rem auto; padding: 0 1.5rem 4rem; }
+
+    .page-header { margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
+    .page-header .tag { display: inline-block; background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.25); color: var(--blue); border-radius: 6px; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 1rem; }
+    .page-header h1 { font-size: 2.2rem; font-weight: 800; color: #fff; letter-spacing: -1px; margin-bottom: .5rem; }
+    .page-header .updated { color: var(--muted); font-size: .85rem; }
+
+    .section-block { margin-top: 2.25rem; }
+    .section-block h2 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: .75rem; display: flex; align-items: center; gap: .5rem; }
+    .section-block h2::before { content: ''; display: block; width: 3px; height: 1rem; background: var(--blue); border-radius: 2px; }
+    .section-block p { color: #94a3b8; font-size: .925rem; line-height: 1.75; margin-bottom: .75rem; }
+    .section-block ul { color: #94a3b8; font-size: .925rem; line-height: 1.75; padding-left: 1.25rem; }
+    .section-block ul li { margin-bottom: .4rem; }
+    .section-block ul li strong { color: var(--text); }
+
+    .highlight-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.5rem; margin-top: 1.25rem; }
+    .highlight-box p { margin: 0; }
+
+    footer { border-top: 1px solid var(--border); padding: 2rem 1.5rem; text-align: center; margin-top: 3rem; }
+    footer a { color: var(--muted); text-decoration: none; margin: 0 .75rem; font-size: .85rem; transition: color .2s; }
+    footer a:hover { color: #fff; }
+    footer p { color: var(--muted); font-size: .8rem; margin-top: .75rem; }
+  </style>

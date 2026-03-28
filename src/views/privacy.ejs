@@ -4,80 +4,107 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Politique de confidentialité — FitnessPro</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background: #f8f9fa; }
-    .content { max-width: 800px; margin: 3rem auto; background: #fff; border-radius: 12px; padding: 2.5rem; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-    h1 { color: #0d6efd; }
-    h2 { font-size: 1.2rem; margin-top: 2rem; }
-    .last-updated { color: #6c757d; font-size: .9rem; }
-  </style>
+  <%- include('partials/legal-head') %>
 </head>
 <body>
-<div class="content">
-  <h1>Politique de confidentialité</h1>
-  <p class="last-updated">Dernière mise à jour : 28 mars 2026</p>
 
-  <p>FitnessPro (<strong>« l'Application »</strong>) est une application mobile de suivi fitness. Cette politique de confidentialité explique quelles données nous collectons, comment nous les utilisons et vos droits.</p>
+<nav>
+  <a href="/" class="nav-brand"><span>Fitness</span>Pro</a>
+  <div class="nav-links">
+    <a href="/privacy">Confidentialité</a>
+    <a href="/terms">CGU</a>
+    <a href="/data-deletion">Suppression</a>
+  </div>
+</nav>
 
-  <h2>1. Données collectées</h2>
-  <p>Lors de l'utilisation de l'Application, nous pouvons collecter :</p>
-  <ul>
-    <li><strong>Données de compte :</strong> nom, adresse email, photo de profil (via votre compte Google, GitHub ou Facebook si vous utilisez la connexion OAuth).</li>
-    <li><strong>Données de santé et fitness :</strong> séances d'entraînement, sessions de course (incluant données GPS), nombre de pas, poids, mesures corporelles, données de sommeil, hydratation.</li>
-    <li><strong>Données techniques :</strong> token de notification push, informations sur l'appareil, version de l'application.</li>
-  </ul>
+<div class="page-wrap">
+  <div class="page-header">
+    <div class="tag">Légal</div>
+    <h1>Politique de confidentialité</h1>
+    <div class="updated">Dernière mise à jour : 28 mars 2026</div>
+  </div>
 
-  <h2>2. Utilisation des données</h2>
-  <p>Vos données sont utilisées pour :</p>
-  <ul>
-    <li>Fournir et améliorer les fonctionnalités de suivi fitness.</li>
-    <li>Afficher vos statistiques et votre progression.</li>
-    <li>Envoyer des notifications de rappel (si activées).</li>
-    <li>Permettre les fonctionnalités sociales (messagerie, défis).</li>
-  </ul>
-
-  <h2>3. Connexion via un réseau social (OAuth)</h2>
-  <p>Lorsque vous vous connectez via <strong>Google</strong>, <strong>GitHub</strong> ou <strong>Facebook</strong>, nous recevons uniquement votre nom, email et photo de profil publique. Nous ne publions rien sur votre compte social et ne stockons pas votre mot de passe réseau social.</p>
-
-  <h2>4. Partage des données</h2>
-  <p>Nous ne vendons pas vos données personnelles. Vos données ne sont pas partagées avec des tiers, sauf :</p>
-  <ul>
-    <li>Supabase (hébergement base de données, Union Européenne).</li>
-    <li>Render (hébergement serveur, États-Unis — soumis au RGPD via contrat).</li>
-    <li>Obligation légale (réquisition judiciaire, etc.).</li>
-  </ul>
-
-  <h2>5. Conservation des données</h2>
-  <p>Vos données sont conservées tant que votre compte est actif. Vous pouvez supprimer votre compte à tout moment depuis l'application, ce qui entraîne la suppression définitive de toutes vos données dans un délai de 30 jours.</p>
-
-  <h2>6. Vos droits (RGPD)</h2>
-  <p>Conformément au Règlement Général sur la Protection des Données (RGPD), vous disposez des droits suivants :</p>
-  <ul>
-    <li>Droit d'accès à vos données.</li>
-    <li>Droit de rectification.</li>
-    <li>Droit à l'effacement (« droit à l'oubli »).</li>
-    <li>Droit à la portabilité.</li>
-    <li>Droit d'opposition au traitement.</li>
-  </ul>
-  <p>Pour exercer ces droits, supprimez votre compte depuis l'application ou contactez-nous.</p>
-
-  <h2>7. Sécurité</h2>
-  <p>Les mots de passe sont hachés avec bcrypt. Les communications sont chiffrées via HTTPS. Les tokens d'authentification ont une durée de vie limitée (15 minutes pour les access tokens).</p>
-
-  <h2>8. Mineurs</h2>
-  <p>L'Application n'est pas destinée aux personnes de moins de 13 ans. Nous ne collectons pas sciemment de données personnelles de mineurs.</p>
-
-  <h2>9. Modifications</h2>
-  <p>Nous pouvons mettre à jour cette politique. En cas de changement significatif, nous vous en informerons via l'application.</p>
-
-  <h2>10. Contact</h2>
-  <p>Pour toute question relative à vos données personnelles, contactez-nous via l'application.</p>
-
-  <hr class="mt-4">
-  <p class="text-center mt-3">
-    <a href="/terms" class="text-muted">Conditions d'utilisation</a>
+  <p style="color:#94a3b8; font-size:.925rem; line-height:1.75;">
+    FitnessPro est une application mobile de suivi fitness. Cette politique explique quelles données nous collectons, comment nous les utilisons et vos droits sur ces données.
   </p>
+
+  <div class="section-block">
+    <h2>1. Données collectées</h2>
+    <ul>
+      <li><strong>Données de compte :</strong> nom, adresse email, photo de profil (via Google, GitHub ou Facebook si vous utilisez la connexion OAuth).</li>
+      <li><strong>Données fitness :</strong> séances d'entraînement, sessions de course avec GPS, nombre de pas, poids, mesures corporelles, données de sommeil, hydratation.</li>
+      <li><strong>Données techniques :</strong> token de notification push, version de l'application.</li>
+    </ul>
+  </div>
+
+  <div class="section-block">
+    <h2>2. Utilisation des données</h2>
+    <ul>
+      <li>Fournir et améliorer les fonctionnalités de suivi fitness.</li>
+      <li>Afficher vos statistiques et votre progression.</li>
+      <li>Envoyer des notifications de rappel (si activées).</li>
+      <li>Permettre les fonctionnalités sociales (messagerie, défis).</li>
+    </ul>
+  </div>
+
+  <div class="section-block">
+    <h2>3. Connexion OAuth (Google, GitHub, Facebook)</h2>
+    <div class="highlight-box">
+      <p>Lorsque vous vous connectez via un réseau social, nous recevons <strong>uniquement</strong> votre nom, email et photo de profil publique. Nous ne publions rien sur votre compte et ne stockons pas votre mot de passe réseau social.</p>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <h2>4. Partage des données</h2>
+    <p>Nous ne vendons pas vos données personnelles. Elles ne sont partagées qu'avec :</p>
+    <ul>
+      <li><strong>Supabase</strong> — hébergement base de données (Union Européenne).</li>
+      <li><strong>Render</strong> — hébergement serveur (États-Unis, soumis au RGPD par contrat).</li>
+      <li>Obligation légale (réquisition judiciaire).</li>
+    </ul>
+  </div>
+
+  <div class="section-block">
+    <h2>5. Conservation des données</h2>
+    <p>Vos données sont conservées tant que votre compte est actif. La suppression du compte entraîne l'effacement définitif de toutes vos données dans un délai de 30 jours.</p>
+  </div>
+
+  <div class="section-block">
+    <h2>6. Vos droits (RGPD)</h2>
+    <p>Conformément au RGPD, vous disposez des droits d'accès, de rectification, d'effacement, de portabilité et d'opposition. Pour exercer ces droits :</p>
+    <div class="highlight-box">
+      <p>Supprimez votre compte directement depuis l'application (Paramètres → Supprimer mon compte) ou consultez la <a href="/data-deletion" style="color:var(--blue);">page de suppression des données</a>.</p>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <h2>7. Sécurité</h2>
+    <ul>
+      <li>Mots de passe hachés avec bcrypt (coût 12).</li>
+      <li>Toutes les communications chiffrées via HTTPS.</li>
+      <li>Access tokens JWT à durée limitée (15 minutes).</li>
+    </ul>
+  </div>
+
+  <div class="section-block">
+    <h2>8. Mineurs</h2>
+    <p>L'Application n'est pas destinée aux personnes de moins de 13 ans. Nous ne collectons pas sciemment de données personnelles de mineurs.</p>
+  </div>
+
+  <div class="section-block">
+    <h2>9. Modifications</h2>
+    <p>Nous pouvons mettre à jour cette politique. En cas de changement significatif, vous en serez informé via l'application.</p>
+  </div>
 </div>
+
+<footer>
+  <div>
+    <a href="/">Accueil</a>
+    <a href="/terms">Conditions d'utilisation</a>
+    <a href="/data-deletion">Suppression des données</a>
+  </div>
+  <p>© 2026 FitnessPro. Tous droits réservés.</p>
+</footer>
+
 </body>
 </html>
