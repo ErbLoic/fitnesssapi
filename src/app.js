@@ -7,6 +7,9 @@ require('./config/passport');
 
 const app = express();
 
+// ── Static files (public/) ────────────────────────────────────────
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
 // ── Body parsers ──────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
