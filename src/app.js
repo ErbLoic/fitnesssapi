@@ -44,6 +44,7 @@ app.use('/badges',   require('./routes/badges'));
 app.use('/settings', require('./routes/settings'));
 app.use('/app',           require('./routes/appConfig'));
 app.use('/conversations', require('./routes/messages'));
+app.use('/friends',       require('./routes/friends'));
 app.use('/',              require('./routes/legal'));
 
 // ── Admin panel ───────────────────────────────────────────────────
