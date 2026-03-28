@@ -4,28 +4,28 @@ const requireAdmin = require('../../middleware/requireAdmin');
 
 const prisma = new PrismaClient();
 
-// ─── Définitions de badges ────────────────────────────────────────
-
 // GET /admin/badges
 router.get('/badges', requireAdmin, async (req, res) => {
-  const [definitions, userBadges] = await Promise.all([
-    prisma.badgeDefinition.findMany({ orderBy: { category: 'asc' } }),
-    prisma.userBadge.findMany({
-      orderBy: { unlockedAt: 'desc' },
-      take: 100,
-      include: { user: { select: { id: true, name: true, email: true } } },
-    }),
-  ]);
-  res.render('admin/badges', {
-    definitions,
-    userBadges,
-    admin: req.session.adminUsername,
-    success: req.query.success,
-    error: req.query.error,
-  });
+  try {
+    const [definitions, userBadges] = await Promise.all([
+      prisma.badgeDefinition.findMany({ orderBy: { category: 'asc' } }),
+      prisma.userBadge.findMany({
+        orderBy: { unlockedAt: 'desc' }, take: 100,
+        include: { user: { select: { id: true, name: true, email: true } } },
+      }),
+    ]);
+    res.render('admin/badges', {
+      definitions, userBadges,
+      admin: req.session.adminUsername,
+      success: req.query.success,
+      error: req.query.error,
+    });
+  } catch (err) {
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
 });
 
-// POST /admin/badges/definitions — créer un badge
+// POST /admin/badges/definitions
 router.post('/badges/definitions', requireAdmin, async (req, res) => {
   const { badgeId, name, description, icon, category } = req.body;
   if (!badgeId || !name || !description) return res.redirect('/admin/badges?error=Champs+requis+manquants');
@@ -38,21 +38,27 @@ router.post('/badges/definitions', requireAdmin, async (req, res) => {
   }
 });
 
-// POST /admin/badges/definitions/:id/toggle — activer/désactiver
+// POST /admin/badges/definitions/:id/toggle
 router.post('/badges/definitions/:id/toggle', requireAdmin, async (req, res) => {
-  const def = await prisma.badgeDefinition.findUnique({ where: { id: req.params.id } });
-  if (!def) return res.redirect('/admin/badges');
-  await prisma.badgeDefinition.update({ where: { id: req.params.id }, data: { isActive: !def.isActive } });
-  res.redirect('/admin/badges');
+  try {
+    const def = await prisma.badgeDefinition.findUnique({ where: { id: req.params.id } });
+    if (!def) return res.redirect('/admin/badges');
+    await prisma.badgeDefinition.update({ where: { id: req.params.id }, data: { isActive: !def.isActive } });
+    res.redirect('/admin/badges');
+  } catch (err) {
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
 });
 
 // POST /admin/badges/definitions/:id/delete
 router.post('/badges/definitions/:id/delete', requireAdmin, async (req, res) => {
-  await prisma.badgeDefinition.delete({ where: { id: req.params.id } });
-  res.redirect('/admin/badges?success=Badge+supprimé');
+  try {
+    await prisma.badgeDefinition.delete({ where: { id: req.params.id } });
+    res.redirect('/admin/badges?success=Badge+supprimé');
+  } catch (err) {
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
 });
-
-// ─── Attribution manuelle ─────────────────────────────────────────
 
 // POST /admin/badges/grant
 router.post('/badges/grant', requireAdmin, async (req, res) => {
@@ -69,8 +75,12 @@ router.post('/badges/grant', requireAdmin, async (req, res) => {
 
 // POST /admin/badges/:userId/:badgeId/delete
 router.post('/badges/:userId/:badgeId/delete', requireAdmin, async (req, res) => {
-  await prisma.userBadge.deleteMany({ where: { userId: req.params.userId, badgeId: req.params.badgeId } });
-  res.redirect('/admin/badges');
+  try {
+    await prisma.userBadge.deleteMany({ where: { userId: req.params.userId, badgeId: req.params.badgeId } });
+    res.redirect('/admin/badges');
+  } catch (err) {
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
 });
 
 module.exports = router;

@@ -1,0 +1,20 @@
+<%
+  var page = '';
+  var title = 'Erreur';
+%>
+<%
+var body = `
+<div class="alert alert-danger">
+  <h5 class="alert-heading">Erreur de connexion à la base de données</h5>
+  <p class="mb-2">${message}</p>
+  <hr>
+  <p class="mb-0 small">
+    Si vous êtes sur <strong>Render</strong>, vérifiez que <code>DATABASE_URL</code> utilise
+    l'URL <strong>Transaction Pooler Supabase</strong> (port 6543, IPv4).<br>
+    Supabase → Settings → Database → Connection string → <strong>Transaction</strong>
+  </p>
+</div>
+<a href="/admin" class="btn btn-outline-primary">← Retour au dashboard</a>
+`;
+%>
+<%- include('layout', { page, title, body, admin: admin || 'admin' }) %>
