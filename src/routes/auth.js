@@ -119,6 +119,19 @@ router.get('/github/callback',
   }
 );
 
+// GET /auth/facebook
+router.get('/facebook', passport.authenticate('facebook', { scope: ['email'], session: false }));
+
+router.get('/facebook/callback',
+  passport.authenticate('facebook', { session: false, failureRedirect: '/auth/failure' }),
+  async (req, res) => {
+    const accessToken = issueAccessToken(req.user);
+    const refreshToken = await issueRefreshToken(req.user.id);
+    const deeplink = process.env.FRONTEND_DEEPLINK || 'fitnessppro://auth';
+    res.redirect(`${deeplink}?token=${accessToken}&refresh=${refreshToken}`);
+  }
+);
+
 router.get('/failure', (req, res) => {
   res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentification OAuth échouée' });
 });

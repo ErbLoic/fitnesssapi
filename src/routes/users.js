@@ -7,6 +7,23 @@ const prisma = new PrismaClient();
 
 router.use(requireAuth);
 
+// GET /users/search?q=
+router.get('/search', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (q.length < 2) {
+    return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Le terme de recherche doit faire au moins 2 caractères' });
+  }
+  const users = await prisma.user.findMany({
+    where: {
+      id: { not: req.userId },
+      name: { contains: q, mode: 'insensitive' },
+    },
+    select: { id: true, name: true, fitnessLevel: true, profileImageUrl: true },
+    take: 20,
+  });
+  res.json(users);
+});
+
 // GET /users/me
 router.get('/me', async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: req.userId } });

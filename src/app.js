@@ -42,7 +42,9 @@ app.use('/steps',    require('./routes/steps'));
 app.use('/weight',   require('./routes/weight'));
 app.use('/badges',   require('./routes/badges'));
 app.use('/settings', require('./routes/settings'));
-app.use('/app',      require('./routes/appConfig'));
+app.use('/app',           require('./routes/appConfig'));
+app.use('/conversations', require('./routes/messages'));
+app.use('/',              require('./routes/legal'));
 
 // ── Admin panel ───────────────────────────────────────────────────
 app.use('/admin', require('./routes/admin/index'));

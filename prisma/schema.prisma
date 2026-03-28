@@ -55,6 +55,8 @@ model User {
   subscription      Subscription?
   aiRecommendations AiRecommendation[]
   adminUser         AdminUser?
+  conversationParticipants ConversationParticipant[]
+  sentMessages      Message[]       @relation("SentMessages")
 
   @@map("users")
 }
@@ -101,6 +103,7 @@ model Workout {
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   exerciseLogs  ExerciseLog[]
   personalRecords PersonalRecord[]
+  sharedInMessages Message[]  @relation("SharedWorkout")
 
   @@map("workouts")
 }
@@ -180,6 +183,7 @@ model RunningSession {
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   gpsPoints  GpsPoint[]
   personalRecords PersonalRecord[]
+  sharedInMessages Message[] @relation("SharedRun")
 
   @@map("running_sessions")
 }
@@ -553,4 +557,45 @@ model AuditLog {
   admin AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
+}
+
+model Conversation {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  conversationId String   @db.Uuid
+  userId         String   @db.Uuid
+  joinedAt       DateTime @default(now()) @db.Timestamptz
+  lastReadAt     DateTime? @db.Timestamptz
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String    @db.Uuid
+  senderId       String    @db.Uuid
+  body           String?
+  workoutId      String?   @db.Uuid
+  runningId      String?   @db.Uuid
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+
+  conversation Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User            @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  workout      Workout?        @relation("SharedWorkout", fields: [workoutId], references: [id], onDelete: SetNull)
+  running      RunningSession? @relation("SharedRun", fields: [runningId], references: [id], onDelete: SetNull)
+
+  @@map("messages")
 }
