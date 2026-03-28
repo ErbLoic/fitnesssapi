@@ -1,0 +1,60 @@
+<%
+  var page = 'dashboard';
+  var title = 'Dashboard';
+  var body = `
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card stat-card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Utilisateurs</div>
+        <div class="fs-2 fw-bold">${stats.users.toLocaleString()}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm" style="border-left:4px solid #198754">
+      <div class="card-body">
+        <div class="text-muted small">Séances muscu</div>
+        <div class="fs-2 fw-bold">${stats.workouts.toLocaleString()}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm" style="border-left:4px solid #fd7e14">
+      <div class="card-body">
+        <div class="text-muted small">Sessions course</div>
+        <div class="fs-2 fw-bold">${stats.runs.toLocaleString()}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm" style="border-left:4px solid #6f42c1">
+      <div class="card-body">
+        <div class="text-muted small">Pas totaux</div>
+        <div class="fs-2 fw-bold">${stats.totalSteps.toLocaleString()}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header fw-semibold">⚙️ Versions app</div>
+  <div class="card-body">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Plateforme</th><th>Dernière</th><th>Min requise</th><th>Maintenance</th><th>Action</th></tr></thead>
+      <tbody>
+        ${versions.map(v => `
+        <tr>
+          <td>${v.platform}</td>
+          <td>${v.latestVersion}</td>
+          <td>${v.minRequiredVersion}</td>
+          <td>${v.maintenanceMode ? '<span class="badge bg-danger">ON</span>' : '<span class="badge bg-success">OFF</span>'}</td>
+          <td><a href="/admin/versions" class="btn btn-sm btn-outline-primary">Modifier</a></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+</div>
+`;
+%>
+<%- include('layout', { page, title, body, admin }) %>

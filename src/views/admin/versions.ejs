@@ -1,0 +1,76 @@
+<%
+  var page = 'versions';
+  var title = 'Gestion des versions';
+%>
+<%
+var body = '';
+if (success) {
+  body += '<div class="alert alert-success">Mise à jour enregistrée.</div>';
+}
+versions.forEach(function(v) {
+  body += `
+<div class="card shadow-sm mb-4">
+  <div class="card-header fw-semibold text-capitalize">${v.platform}</div>
+  <div class="card-body">
+    <form method="POST" action="/admin/versions/${v.platform}">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Dernière version</label>
+          <input type="text" name="latestVersion" class="form-control" value="${v.latestVersion}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Version minimale</label>
+          <input type="text" name="minRequiredVersion" class="form-control" value="${v.minRequiredVersion}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Store URL</label>
+          <input type="text" name="storeUrl" class="form-control" value="${v.storeUrl}">
+        </div>
+        <div class="col-md-12">
+          <label class="form-label">Notes de version</label>
+          <input type="text" name="releaseNotes" class="form-control" value="${v.releaseNotes || ''}">
+        </div>
+      </div>
+      <div class="row g-3 mt-2">
+        <div class="col-md-4">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="forceUpdate" id="forceUpdate_${v.platform}" ${v.forceUpdate ? 'checked' : ''}>
+            <label class="form-check-label" for="forceUpdate_${v.platform}">Forcer la mise à jour</label>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="maintenanceMode" id="maintenance_${v.platform}" ${v.maintenanceMode ? 'checked' : ''}>
+            <label class="form-check-label" for="maintenance_${v.platform}">Mode maintenance</label>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Message maintenance</label>
+          <input type="text" name="maintenanceMessage" class="form-control" value="${v.maintenanceMessage || ''}">
+        </div>
+      </div>
+      <div class="mt-3">
+        <p class="fw-semibold mb-2">Feature Flags</p>
+        <div class="row g-2">
+          ${[
+            ['socialEnabled','Social'],
+            ['nutritionEnabled','Nutrition'],
+            ['premiumEnabled','Premium'],
+            ['aiCoachEnabled','Coach IA'],
+            ['leaderboardEnabled','Classement'],
+          ].map(([key, label]) => `
+          <div class="col-md-2">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="${key}" id="${key}_${v.platform}" ${v[key] ? 'checked' : ''}>
+              <label class="form-check-label" for="${key}_${v.platform}">${label}</label>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-3">Enregistrer</button>
+    </form>
+  </div>
+</div>`;
+});
+%>
+<%- include('layout', { page, title, body, admin }) %>

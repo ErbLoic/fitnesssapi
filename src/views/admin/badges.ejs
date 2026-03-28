@@ -1,0 +1,135 @@
+<%
+  var page = 'badges';
+  var title = 'Gestion des badges';
+%>
+<%
+var alerts = '';
+if (success) alerts += `<div class="alert alert-success alert-dismissible">${success}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+if (error) alerts += `<div class="alert alert-danger alert-dismissible">${error}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+
+var body = alerts + `
+
+<!-- Créer un badge -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header fw-semibold" data-bs-toggle="collapse" data-bs-target="#createBadge" style="cursor:pointer">
+    ➕ Créer un nouveau badge <small class="text-muted">(cliquer pour dérouler)</small>
+  </div>
+  <div id="createBadge" class="collapse">
+    <div class="card-body">
+      <form method="POST" action="/admin/badges/definitions" class="row g-2">
+        <div class="col-md-2">
+          <label class="form-label">ID unique</label>
+          <input type="text" name="badgeId" class="form-control" placeholder="ex: first_run" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Nom</label>
+          <input type="text" name="name" class="form-control" placeholder="Premier pas" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Description</label>
+          <input type="text" name="description" class="form-control" placeholder="Complète ta première course" required>
+        </div>
+        <div class="col-md-1">
+          <label class="form-label">Icône</label>
+          <input type="text" name="icon" class="form-control" placeholder="🏅">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Catégorie</label>
+          <select name="category" class="form-select">
+            <option value="running">Course</option>
+            <option value="workout">Musculation</option>
+            <option value="steps">Podomètre</option>
+            <option value="streak">Streak</option>
+            <option value="weight">Poids</option>
+            <option value="general" selected>Général</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Créer le badge</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Liste des définitions -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header fw-semibold">Catalogue de badges (${definitions.length})</div>
+  <div class="card-body p-0">
+    <table class="table table-striped table-hover mb-0">
+      <thead class="table-dark">
+        <tr><th>Icône</th><th>ID</th><th>Nom</th><th>Description</th><th>Catégorie</th><th>Statut</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        ${definitions.length === 0 ? '<tr><td colspan="7" class="text-center text-muted py-3">Aucun badge défini. Créez-en un ci-dessus.</td></tr>' :
+          definitions.map(d => `
+        <tr>
+          <td class="fs-5">${d.icon}</td>
+          <td><code>${d.badgeId}</code></td>
+          <td>${d.name}</td>
+          <td class="text-muted small">${d.description}</td>
+          <td><span class="badge bg-secondary">${d.category}</span></td>
+          <td>${d.isActive ? '<span class="badge bg-success">Actif</span>' : '<span class="badge bg-secondary">Inactif</span>'}</td>
+          <td class="d-flex gap-1">
+            <form method="POST" action="/admin/badges/definitions/${d.id}/toggle" class="d-inline">
+              <button class="btn btn-sm btn-outline-secondary" type="submit">${d.isActive ? 'Désactiver' : 'Activer'}</button>
+            </form>
+            <form method="POST" action="/admin/badges/definitions/${d.id}/delete" class="d-inline" onsubmit="return confirm('Supprimer cette définition de badge ?')">
+              <button class="btn btn-sm btn-outline-danger" type="submit">Suppr.</button>
+            </form>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Attribution manuelle -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header fw-semibold">Attribuer un badge manuellement</div>
+  <div class="card-body">
+    <form method="POST" action="/admin/badges/grant" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">UUID utilisateur</label>
+        <input type="text" name="userId" class="form-control" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">ID badge</label>
+        <select name="badgeId" class="form-select" required>
+          <option value="">-- Choisir un badge --</option>
+          ${definitions.map(d => `<option value="${d.badgeId}">${d.icon} ${d.name} (${d.badgeId})</option>`).join('')}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary w-100">Attribuer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Badges attribués aux utilisateurs -->
+<div class="card shadow-sm">
+  <div class="card-header fw-semibold">Badges attribués récemment (100 derniers)</div>
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead class="table-dark"><tr><th>Utilisateur</th><th>Badge</th><th>Débloqué le</th><th>Action</th></tr></thead>
+      <tbody>
+        ${userBadges.length === 0 ? '<tr><td colspan="4" class="text-center text-muted py-3">Aucun badge attribué.</td></tr>' :
+          userBadges.map(b => `
+        <tr>
+          <td>${b.user.name} <small class="text-muted">(${b.user.email || '—'})</small></td>
+          <td><code>${b.badgeId}</code></td>
+          <td>${new Date(b.unlockedAt).toLocaleString('fr-FR')}</td>
+          <td>
+            <form method="POST" action="/admin/badges/${b.userId}/${b.badgeId}/delete" onsubmit="return confirm('Révoquer ce badge ?' )" class="d-inline">
+              <button class="btn btn-sm btn-outline-danger">Révoquer</button>
+            </form>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+</div>
+`;
+%>
+<%- include('layout', { page, title, body, admin }) %>
