@@ -29,7 +29,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
       prisma.userBadge.count(),
       prisma.friendship.count({ where: { status: 'accepted' } }),
       prisma.conversation.count(),
-      prisma.workout.groupBy({ by: ['type'], _count: { _all: true } }),
+      prisma.workout.groupBy({ by: ['workoutType'], _count: { _all: true } }),
       prisma.exerciseLog.groupBy({
         by: ['exerciseName'],
         _count: { _all: true },
@@ -47,7 +47,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
     // Calcul répartition types séances
     const typeMap = { strength: 0, cardio: 0, mixed: 0 };
     for (const row of workoutsByType) {
-      if (typeMap[row.type] !== undefined) typeMap[row.type] = row._count._all;
+      if (typeMap[row.workoutType] !== undefined) typeMap[row.workoutType] = row._count._all;
     }
     const typeTotal = Object.values(typeMap).reduce((a, b) => a + b, 0);
     const typePercent = {

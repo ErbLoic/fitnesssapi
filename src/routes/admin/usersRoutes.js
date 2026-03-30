@@ -108,14 +108,14 @@ router.get('/users/:id', requireAdmin, async (req, res) => {
       prisma.workout.findMany({
         where: { userId },
         take: 5,
-        orderBy: { startedAt: 'desc' },
-        select: { id: true, name: true, type: true, durationMin: true, startedAt: true },
+        orderBy: { startTime: 'desc' },
+        select: { id: true, name: true, workoutType: true, durationMinutes: true, startTime: true },
       }),
       prisma.runningSession.findMany({
         where: { userId },
         take: 5,
-        orderBy: { startedAt: 'desc' },
-        select: { id: true, distanceKm: true, durationSec: true, startedAt: true },
+        orderBy: { startTime: 'desc' },
+        select: { id: true, distanceKm: true, durationSeconds: true, startTime: true },
       }),
       prisma.friendship.count({
         where: { OR: [{ requesterId: userId }, { receiverId: userId }], status: 'accepted' },

@@ -89,9 +89,9 @@ var body = `
         ${recentWorkouts.map(w => `
         <tr>
           <td>${w.name || '—'}</td>
-          <td><span class="badge bg-secondary">${w.type}</span></td>
-          <td>${w.durationMin ? w.durationMin + ' min' : '—'}</td>
-          <td class="text-muted small">${new Date(w.startedAt).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
+          <td><span class="badge bg-secondary">${w.workoutType}</span></td>
+          <td>${w.durationMinutes ? w.durationMinutes + ' min' : '—'}</td>
+          <td class="text-muted small">${new Date(w.startTime).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
           <td>
             <form method="POST" action="/admin/workouts/${w.id}/delete" onsubmit="return confirm('Supprimer cette séance ?')" style="display:inline">
               <button class="btn btn-sm btn-outline-danger">Supprimer</button>
@@ -116,8 +116,8 @@ var body = `
         ${recentRuns.map(r => `
         <tr>
           <td>${r.distanceKm ? r.distanceKm.toFixed(2) + ' km' : '—'}</td>
-          <td>${r.durationSec ? Math.floor(r.durationSec / 60) + ' min' : '—'}</td>
-          <td class="text-muted small">${new Date(r.startedAt).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
+          <td>${r.durationSeconds ? Math.floor(r.durationSeconds / 60) + ' min' : '—'}</td>
+          <td class="text-muted small">${new Date(r.startTime).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
           <td>
             <form method="POST" action="/admin/running/${r.id}/delete" onsubmit="return confirm('Supprimer cette course ?')" style="display:inline">
               <button class="btn btn-sm btn-outline-danger">Supprimer</button>
