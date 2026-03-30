@@ -3,56 +3,161 @@
   var title = 'Dashboard';
   var body = `
 <div class="row g-3 mb-4">
-  <div class="col-md-3">
+  <div class="col-md-3 col-6">
     <div class="card stat-card shadow-sm">
       <div class="card-body">
-        <div class="text-muted small">Utilisateurs</div>
+        <div class="text-muted small">👥 Utilisateurs</div>
         <div class="fs-2 fw-bold">${stats.users.toLocaleString()}</div>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-md-3 col-6">
     <div class="card shadow-sm" style="border-left:4px solid #198754">
       <div class="card-body">
-        <div class="text-muted small">Séances muscu</div>
+        <div class="text-muted small">🏋️ Séances muscu</div>
         <div class="fs-2 fw-bold">${stats.workouts.toLocaleString()}</div>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-md-3 col-6">
     <div class="card shadow-sm" style="border-left:4px solid #fd7e14">
       <div class="card-body">
-        <div class="text-muted small">Sessions course</div>
+        <div class="text-muted small">🏃 Sessions course</div>
         <div class="fs-2 fw-bold">${stats.runs.toLocaleString()}</div>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
+  <div class="col-md-3 col-6">
     <div class="card shadow-sm" style="border-left:4px solid #6f42c1">
       <div class="card-body">
-        <div class="text-muted small">Pas totaux</div>
+        <div class="text-muted small">👟 Pas totaux</div>
         <div class="fs-2 fw-bold">${stats.totalSteps.toLocaleString()}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-6">
+    <div class="card shadow-sm" style="border-left:4px solid #ffc107">
+      <div class="card-body">
+        <div class="text-muted small">🏅 Badges débloqués</div>
+        <div class="fs-2 fw-bold">${stats.badges.toLocaleString()}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-6">
+    <div class="card shadow-sm" style="border-left:4px solid #0dcaf0">
+      <div class="card-body">
+        <div class="text-muted small">🤝 Amitiés actives</div>
+        <div class="fs-2 fw-bold">${stats.friendships.toLocaleString()}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 col-6">
+    <div class="card shadow-sm" style="border-left:4px solid #20c997">
+      <div class="card-body">
+        <div class="text-muted small">💬 Conversations</div>
+        <div class="fs-2 fw-bold">${stats.conversations.toLocaleString()}</div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="card shadow-sm">
-  <div class="card-header fw-semibold">⚙️ Versions app</div>
-  <div class="card-body">
-    <table class="table table-sm mb-0">
-      <thead><tr><th>Plateforme</th><th>Dernière</th><th>Min requise</th><th>Maintenance</th><th>Action</th></tr></thead>
-      <tbody>
-        ${versions.map(v => `
-        <tr>
-          <td>${v.platform}</td>
-          <td>${v.latestVersion}</td>
-          <td>${v.minRequiredVersion}</td>
-          <td>${v.maintenanceMode ? '<span class="badge bg-danger">ON</span>' : '<span class="badge bg-success">OFF</span>'}</td>
-          <td><a href="/admin/versions" class="btn btn-sm btn-outline-primary">Modifier</a></td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
+<div class="row g-3 mb-4">
+  <!-- Derniers inscrits -->
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">🆕 Derniers inscrits</div>
+      <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Nom</th><th>Email</th><th>Date</th><th>Statut</th></tr>
+          </thead>
+          <tbody>
+            ${recentUsers.map(u => `
+            <tr>
+              <td><a href="/admin/users/${u.id}" class="text-decoration-none">${u.name}</a></td>
+              <td class="text-muted small">${u.email || '—'}</td>
+              <td class="text-muted small">${new Date(u.createdAt).toLocaleDateString('fr-FR')}</td>
+              <td>${u.isBanned ? '<span class="badge bg-danger">Banni</span>' : '<span class="badge bg-success">Actif</span>'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activité récente (logs) -->
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">🕓 Activité récente</div>
+      <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Action</th><th>Cible</th><th>Date</th></tr>
+          </thead>
+          <tbody>
+            ${recentLogs.map(l => `
+            <tr>
+              <td><span class="badge bg-secondary">${l.action}</span></td>
+              <td class="text-muted small">${l.targetType} · ${(l.targetId || '').slice(0, 8)}…</td>
+              <td class="text-muted small">${new Date(l.createdAt).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
+            </tr>`).join('')}
+            ${recentLogs.length === 0 ? '<tr><td colspan="3" class="text-muted text-center py-3">Aucune activité</td></tr>' : ''}
+          </tbody>
+        </table>
+        <div class="px-3 pb-2 pt-1">
+          <a href="/admin/logs" class="small text-muted">Voir tous les logs →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Top utilisateurs -->
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">🏆 Top utilisateurs (séances)</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr><th>#</th><th>Nom</th><th>Séances</th></tr>
+          </thead>
+          <tbody>
+            ${topUsers.map((u, i) => `
+            <tr>
+              <td class="text-muted">${i + 1}</td>
+              <td><a href="/admin/users/${u.id}" class="text-decoration-none">${u.name}</a></td>
+              <td><strong>${u.totalWorkouts}</strong></td>
+            </tr>`).join('')}
+            ${topUsers.length === 0 ? '<tr><td colspan="3" class="text-muted text-center py-3">Aucune donnée</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Versions app -->
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">⚙️ Versions app</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr><th>Plateforme</th><th>Dernière</th><th>Min requise</th><th>Maintenance</th><th></th></tr>
+          </thead>
+          <tbody>
+            ${versions.map(v => `
+            <tr>
+              <td class="text-capitalize">${v.platform}</td>
+              <td>${v.latestVersion}</td>
+              <td>${v.minRequiredVersion}</td>
+              <td>${v.maintenanceMode ? '<span class="badge bg-danger">ON</span>' : '<span class="badge bg-success">OFF</span>'}</td>
+              <td><a href="/admin/versions" class="btn btn-sm btn-outline-primary">Modifier</a></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 `;
