@@ -128,16 +128,16 @@ router.post('/api/debug-stats', async (req, res) => {
     const totalWorkouts = await prisma.workout.count();
     const dupPercentage = totalWorkouts ? ((totalDups / totalWorkouts) * 100).toFixed(2) : 0;
 
-    const avgSyncTime = await prisma.workout.aggregate({
-      _avg: { updatedAt: true }
-    });
+    const totalRunnings = await prisma.runningSession.count();
+    const totalMessages = await prisma.message.count();
 
     const stats = {
       totalWorkouts,
+      totalRunnings,
+      totalMessages,
       totalDuplicatesDetected: totalDups,
       duplicatePercentage: dupPercentage,
       alertedUsers: alertedUsers.length,
-      averageSyncTimeMs: 0,  // À calculer si nécessaire
     };
 
     res.json({
