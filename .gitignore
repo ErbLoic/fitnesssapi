@@ -3,3 +3,7 @@ node_modules/
 *.env.local
 .claude
 API_MOBILE.md
+doc/
+API*.md
+Flutter_API*.md
+HANDOFF*.md

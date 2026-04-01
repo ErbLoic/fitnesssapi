@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { z } = require('zod');
 const { PrismaClient } = require('@prisma/client');
 const requireAuth = require('../middleware/requireAuth');
+const { transformRunningFromApp, formatRunningForApp, hashRunning } = require('../lib/transformers');
 
 const prisma = new PrismaClient();
 router.use(requireAuth);
@@ -46,53 +47,103 @@ router.get('/', async (req, res) => {
 
 // POST /running
 router.post('/', async (req, res) => {
+  // ━━━ Valider et transformer le body (accepte format APP ou API) ━━━
   const gpsSchema = z.object({
-    latitude: z.number(),
-    longitude: z.number(),
-    altitudeM: z.number().default(0),
-    speedMs: z.number().default(0),
+    lat: z.number().optional(),  // ← format app
+    latitude: z.number().optional(),  // ← format api
+    lng: z.number().optional(),  // ← format app
+    longitude: z.number().optional(),  // ← format api
+    altitudeM: z.number().optional(),
+    speedKmh: z.number().optional(),  // ← format app (km/h)
+    speedMs: z.number().optional(),  // ← format api (m/s)
     accuracyM: z.number().optional(),
     recordedAt: z.string(),
-    sortOrder: z.number().int(),
+    sortOrder: z.number().int().optional(),
   });
-  const schema = z.object({
-    startTime: z.string(),
-    endTime: z.string().optional(),
-    durationSeconds: z.number().int().default(0),
+
+  const appSchema = z.object({
+    startedAt: z.string().optional(),  // ← format app
+    startTime: z.string().optional(),  // ← format api
+    endedAt: z.string().optional(),  // ← format app
+    endTime: z.string().optional(),  // ← format api
+    durationSec: z.number().int().optional(),  // ← format app
+    durationSeconds: z.number().int().optional(),  // ← format api
     distanceKm: z.number().default(0),
     avgSpeedKmh: z.number().default(0),
     maxSpeedKmh: z.number().default(0),
-    caloriesBurned: z.number().default(0),
+    calories: z.number().optional(),  // ← format app
+    caloriesBurned: z.number().optional(),  // ← format api
     elevationGainM: z.number().default(0),
     elevationLossM: z.number().default(0),
-    avgHeartRate: z.number().int().optional(),
+    avgHeartRateBpm: z.number().int().optional(),  // ← format app
+    avgHeartRate: z.number().int().optional(),  // ← format api
     maxHeartRate: z.number().int().optional(),
-    weather: z.string().optional(),
+    weatherCondition: z.string().optional(),  // ← format app
+    weather: z.string().optional(),  // ← format api
     temperatureC: z.number().optional(),
     notes: z.string().optional(),
     isCompleted: z.boolean().default(true),
-    splitTimes: z.array(z.number()).default([]),
+    splits: z.array(z.object({ km: z.number(), timeMin: z.number() })).optional(),  // ← format app
+    splitTimes: z.array(z.number()).optional(),  // ← format api
     gpsPoints: z.array(gpsSchema).optional(),
   });
 
-  const parsed = schema.safeParse(req.body);
+  const parsed = appSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: 'VALIDATION_ERROR', message: parsed.error.errors[0].message });
   }
-  const { gpsPoints, ...sessionData } = parsed.data;
 
+  // ━━━ Transformer APP → format interne ━━━
+  const sessionData = transformRunningFromApp(parsed.data);
+
+  // ━━━ Détection duplicata via HASH ━━━
+  const dupHash = hashRunning(req.userId, sessionData.startTime, sessionData.durationSeconds, sessionData.distanceKm);
+  const existingWithHash = await prisma.runningSession.findFirst({
+    where: {
+      userId: req.userId,
+      startTime: { gte: new Date(sessionData.startTime.getTime() - 2 * 60 * 1000), lte: new Date(sessionData.startTime.getTime() + 2 * 60 * 1000) },
+    }
+  });
+
+  let isDuplicate = false;
+  if (existingWithHash) {
+    const durationDiff = Math.abs(existingWithHash.durationSeconds - sessionData.durationSeconds);
+    const distanceDiff = Math.abs(existingWithHash.distanceKm - sessionData.distanceKm);
+    if (durationDiff < 120 && distanceDiff < 0.5) {  // ±120 sec duration, ±500m distance
+      isDuplicate = true;
+      // ━━━ Logger le dup potentiel ━━━
+      await prisma.auditLog.create({
+        data: {
+          action: 'POTENTIAL_DUPLICATE',
+          targetType: 'RUNNING',
+          targetId: `hash:${dupHash}`,
+          payload: {
+            newSession: { id: 'pending', startTime: sessionData.startTime, durationSeconds: sessionData.durationSeconds },
+            existingSession: { id: existingWithHash.id, startTime: existingWithHash.startTime, durationSeconds: existingWithHash.durationSeconds },
+          },
+        },
+      });
+    }
+  }
+
+  // ━━━ Créer la session ━━━
+  const { gpsPoints, ...restData } = sessionData;
   const session = await prisma.runningSession.create({
     data: {
-      ...sessionData,
+      ...restData,
       userId: req.userId,
-      startTime: new Date(sessionData.startTime),
-      endTime: sessionData.endTime ? new Date(sessionData.endTime) : undefined,
       gpsPoints: gpsPoints ? {
-        create: gpsPoints.map(p => ({ ...p, recordedAt: new Date(p.recordedAt) })),
+        create: gpsPoints.map((p, idx) => ({ ...p, recordedAt: new Date(p.recordedAt), sortOrder: idx })),
       } : undefined,
     },
+    include: { gpsPoints: { orderBy: { sortOrder: 'asc' } } },
   });
-  res.status(201).json(session);
+
+  // ━━━ Retourner format APP ━━━
+  const responseSession = formatRunningForApp(session);
+  responseSession.isDuplicate = isDuplicate;  // ← warning si dup détecté
+
+  res.status(201).json(responseSession);
 });
 
 // GET /running/:id
@@ -102,7 +153,7 @@ router.get('/:id', async (req, res) => {
     include: { gpsPoints: { orderBy: { sortOrder: 'asc' } } },
   });
   if (!session) return res.status(404).json({ error: 'NOT_FOUND', message: 'Session introuvable' });
-  res.json(session);
+  res.json(formatRunningForApp(session));
 });
 
 // DELETE /running/:id

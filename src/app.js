@@ -2,10 +2,14 @@ const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 const path = require('path');
+const compression = require('compression');
 
 require('./config/passport');
 
 const app = express();
+
+// ── Compression gzip (efficacité) ───────────────────────────────────
+app.use(compression());
 
 // ── Static files (public/) ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'public')));

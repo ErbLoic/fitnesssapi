@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { z } = require('zod');
 const { PrismaClient } = require('@prisma/client');
 const requireAuth = require('../middleware/requireAuth');
+const { transformStepsFromApp, formatStepsForApp } = require('../lib/transformers');
 
 const prisma = new PrismaClient();
 router.use(requireAuth);
@@ -43,33 +44,42 @@ router.get('/', async (req, res) => {
     orderBy: { date: 'desc' },
     include: { hourlySteps: { orderBy: { hour: 'asc' } } },
   });
-  res.json(entries);
+  res.json(entries.map(formatStepsForApp));
 });
 
 // PUT /steps/:date
 router.put('/:date', async (req, res) => {
-  const schema = z.object({
+  // ━━━ Accepte format APP et API ━━━
+  const appSchema = z.object({
     steps: z.number().int().default(0),
     distanceKm: z.number().default(0),
-    caloriesBurned: z.number().default(0),
+    calories: z.number().optional(),  // ← format app
+    caloriesBurned: z.number().optional(),  // ← format api
     activeMinutes: z.number().int().default(0),
     goal: z.number().int().default(10000),
-    hourlyData: z.array(z.object({ hour: z.number().int().min(0).max(23), steps: z.number().int() })).optional(),
+    hourlySteps: z.array(z.number().int()).optional(),  // ← format app [int×24]
+    hourlyData: z.array(z.object({ hour: z.number().int().min(0).max(23), steps: z.number().int() })).optional(),  // ← format api [{hour, steps}]
   });
-  const parsed = schema.safeParse(req.body);
+
+  const parsed = appSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: 'VALIDATION_ERROR', message: parsed.error.errors[0].message });
   }
-  const { hourlyData, ...stepsData } = parsed.data;
+
+  // ━━━ Transformer APP → format interne ━━━
+  const stepsData = transformStepsFromApp(parsed.data);
+  const { hourlyData, ...entryData } = stepsData;
+
   const date = new Date(req.params.date);
   date.setUTCHours(0, 0, 0, 0);
 
   const entry = await prisma.dailySteps.upsert({
     where: { userId_date: { userId: req.userId, date } },
-    update: stepsData,
-    create: { ...stepsData, userId: req.userId, date },
+    update: entryData,
+    create: { ...entryData, userId: req.userId, date },
   });
 
+  // ━━━ Créer/mettre à jour les heures ━━━
   if (hourlyData && hourlyData.length > 0) {
     for (const h of hourlyData) {
       await prisma.hourlySteps.upsert({
@@ -84,7 +94,8 @@ router.put('/:date', async (req, res) => {
     where: { id: entry.id },
     include: { hourlySteps: { orderBy: { hour: 'asc' } } },
   });
-  res.json(result);
+  
+  res.json(formatStepsForApp(result));
 });
 
 module.exports = router;

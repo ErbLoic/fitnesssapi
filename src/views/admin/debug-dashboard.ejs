@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🐛 Debug Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --dev-red: #dc3545;
+      --dev-yellow: #ffc107;
+    }
+
+    body {
+      background-color: #f5f5f5;
+      font-family: 'Courier New', monospace;
+    }
+
+    .debug-header {
+      background: linear-gradient(135deg, var(--dev-red), var(--dev-yellow));
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .debug-header h1 {
+      font-size: 28px;
+      margin: 0;
+    }
+
+    .debug-badge {
+      display: inline-block;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .section-card {
+      background: white;
+      border-left: 4px solid var(--dev-red);
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    .section-header {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-bottom: 1px solid #dee2e6;
+      font-weight: bold;
+      color: var(--dev-red);
+    }
+
+    .section-body {
+      padding: 15px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .alert-danger-dev {
+      background-color: #ffe6e6;
+      border: 2px solid var(--dev-red);
+      color: #721c24;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .json-viewer {
+      background-color: #2d2d2d;
+      color: #f8f8f2;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      overflow-x: auto;
+      max-height: 300px;
+      overflow-y: auto;
+      line-height: 1.4;
+      border: 1px solid #555;
+    }
+
+    .json-key {
+      color: #66d9ef;
+    }
+
+    .json-value {
+      color: #a1efe4;
+    }
+
+    .json-string {
+      color: #e6db74;
+    }
+
+    .stat-box {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      text-align: center;
+      margin: 10px 0;
+      border-left: 4px solid #007bff;
+    }
+
+    .stat-box .value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    .stat-box .label {
+      font-size: 12px;
+      color: #6c757d;
+      text-transform: uppercase;
+    }
+
+    .badge-warning-dup {
+      background-color: var(--dev-yellow);
+      color: black;
+    }
+
+    table {
+      font-size: 12px;
+    }
+
+    table th {
+      background-color: #f8f9fa;
+      border-bottom: 2px solid #dee2e6;
+    }
+
+    table td {
+      padding: 8px;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .message-preview {
+      background-color: #f8f9fa;
+      padding: 8px;
+      border-radius: 4px;
+      margin: 5px 0;
+      font-size: 11px;
+      border-left: 3px solid #007bff;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #6c757d;
+    }
+
+    .spinner-border {
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="debug-header">
+      <h1>🐛 FitnessPro Debug Dashboard</h1>
+      <div class="debug-badge">⚠️ DEVELOPMENT ONLY — À SUPPRIMER AVANT PRODUCTION</div>
+      <small style="display: block; margin-top: 10px;">Dernière mise à jour: <span id="timestamp">—</span></small>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="stat-box">
+          <div class="label">Duplicatas détectés</div>
+          <div class="value" id="stat-dups">—</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-box">
+          <div class="label">% Workouts dupliqués</div>
+          <div class="value" id="stat-dup-percent">—</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-box">
+          <div class="label">Utilisateurs alertés</div>
+          <div class="value" id="stat-alerted-users">—</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-box">
+          <div class="label">Total workouts</div>
+          <div class="value" id="stat-total-workouts">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 1 : Conversations -->
+    <div class="section-card">
+      <div class="section-header">📱 Conversations & Messages</div>
+      <div class="section-body" id="conversations-section">
+        <div class="loading">
+          <div class="spinner-border text-danger" role="status"></div>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2 : Duplicatas -->
+    <div class="section-card">
+      <div class="section-header">⚠️ Sync Errors (Duplicatas Potentiels)</div>
+      <div class="section-body" id="duplicates-section">
+        <div class="loading">
+          <div class="spinner-border text-danger" role="status"></div>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3 : Workouts Récents -->
+    <div class="section-card">
+      <div class="section-header">💪 Derniers Workouts (format app)</div>
+      <div class="section-body" id="workouts-section">
+        <div class="loading">
+          <div class="spinner-border text-danger" role="status"></div>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4 : Running Récents -->
+    <div class="section-card">
+      <div class="section-header">🏃 Dernières Sessions de Course</div>
+      <div class="section-body" id="running-section">
+        <div class="loading">
+          <div class="spinner-border text-danger" role="status"></div>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Charger les données au démarrage
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const response = await fetch('/admin/debug-dashboard/api/debug-stats', { method: 'POST' });
+        if (!response.ok) throw new Error('Failed to load debug stats');
+        
+        const data = await response.json();
+        renderDebugData(data);
+      } catch (error) {
+        console.error('Debug error:', error);
+        document.body.innerHTML = `<div class="alert alert-danger m-4">Erreur: ${error.message}</div>`;
+      }
+    });
+
+    function renderDebugData(data) {
+      // Mise à jour timestamp
+      document.getElementById('timestamp').textContent = new Date(data.timestamp).toLocaleString('fr-FR');
+
+      // Stats
+      document.getElementById('stat-dups').textContent = data.stats.totalDuplicatesDetected;
+      document.getElementById('stat-dup-percent').textContent = data.stats.duplicatePercentage + '%';
+      document.getElementById('stat-alerted-users').textContent = data.stats.alertedUsers;
+      document.getElementById('stat-total-workouts').textContent = data.stats.totalWorkouts;
+
+      // Conversations
+      const convHtml = data.conversations.length === 0 ? '<p class="text-muted">Aucune conversation</p>' : `
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Participants</th>
+              <th>Dernier message</th>
+              <th>Non lu</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.conversations.map(conv => {
+              const unread = data.unreadStats.find(u => u.convId === conv.id)?.unreadCount || 0;
+              const lastMsg = conv.lastMessages[0];
+              return `
+                <tr>
+                  <td><code>${conv.id.substring(0, 8)}</code></td>
+                  <td>${conv.participants.map(p => `<span class="badge bg-info">${p.name}</span>`).join(' ')}</td>
+                  <td><small>${lastMsg?.sender || '—'}: ${lastMsg?.body || '[media]'}</small></td>
+                  <td><span class="badge ${unread > 0 ? 'bg-danger' : 'bg-secondary'}">${unread}</span></td>
+                  <td><small>${new Date(conv.updatedAt).toLocaleString('fr-FR')}</small></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+      document.getElementById('conversations-section').innerHTML = convHtml;
+
+      // Duplicatas
+      if (data.alertedUsers.length > 0) {
+        const dupHtml = `
+          <div class="alert-danger-dev">
+            ⚠️ ${data.alertedUsers.length} utilisateur(s) avec >5 dups détectés
+            ${data.alertedUsers.map(u => `<br/><strong>User ${u.userId}</strong>: ${u.count} dups`).join('')}
+          </div>
+          <table class="table table-sm">
+            <thead><tr><th>Timestamp</th><th>Type</th><th>Payload</th></tr></thead>
+            <tbody>
+              ${data.duplicates.slice(0, 10).map(log => `
+                <tr>
+                  <td><small>${new Date(log.createdAt).toLocaleString('fr-FR')}</small></td>
+                  <td><span class="badge badge-warning-dup">${log.targetType}</span></td>
+                  <td><pre class="json-viewer">${JSON.stringify(log.payload, null, 2)}</pre></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        document.getElementById('duplicates-section').innerHTML = dupHtml;
+      } else {
+        document.getElementById('duplicates-section').innerHTML = '<p class="text-muted">✓ Aucun duplicata détecté</p>';
+      }
+
+      // Workouts
+      const workoutHtml = data.lastWorkouts.length === 0 ? '<p class="text-muted">Aucun workout</p>' : 
+        data.lastWorkouts.map(w => `
+          <div class="message-preview">
+            <strong>${w.name}</strong> - ${w.workoutType} <br/>
+            ${w.durationMinutes} min | ${w.caloriesBurned} cal | ${w.exerciseLogs.length} exercices
+          </div>
+        `).join('');
+      document.getElementById('workouts-section').innerHTML = workoutHtml;
+
+      // Running
+      const runningHtml = data.lastRunnings.length === 0 ? '<p class="text-muted">Aucune course</p>' : 
+        data.lastRunnings.map(r => `
+          <div class="message-preview">
+            ${r.distanceKm} km | ${Math.round(r.durationSeconds / 60)} min | ${r.caloriesBurned} cal | ${r.gpsPoints.length} points GPS
+          </div>
+        `).join('');
+      document.getElementById('running-section').innerHTML = runningHtml;
+    }
+
+    // Auto-refresh toutes les 30 secondes
+    setInterval(() => {
+      location.reload();
+    }, 30000);
+  </script>
+</body>
+</html>

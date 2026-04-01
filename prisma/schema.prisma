@@ -105,6 +105,7 @@ model Workout {
   personalRecords PersonalRecord[]
   sharedInMessages Message[]  @relation("SharedWorkout")
 
+  @@index([userId, startTime])
   @@map("workouts")
 }
 
@@ -185,6 +186,7 @@ model RunningSession {
   personalRecords PersonalRecord[]
   sharedInMessages Message[] @relation("SharedRun")
 
+  @@index([userId, startTime])
   @@map("running_sessions")
 }
 
@@ -597,5 +599,6 @@ model Message {
   workout      Workout?        @relation("SharedWorkout", fields: [workoutId], references: [id], onDelete: SetNull)
   running      RunningSession? @relation("SharedRun", fields: [runningId], references: [id], onDelete: SetNull)
 
+  @@index([conversationId, createdAt])
   @@map("messages")
 }
