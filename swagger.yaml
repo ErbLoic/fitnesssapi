@@ -1,0 +1,2393 @@
+openapi: 3.0.0
+info:
+  title: Fitness API
+  description: |
+    API RESTful complète pour l'application mobile Fitness.
+    Supporte gestion des utilisateurs, courses, séances, pas, poids, amis, messages et badges.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@fitnesssapi.com
+  license:
+    name: MIT
+
+servers:
+  - url: https://api.fitnesssapi.com/v1
+    description: Production Server
+  - url: http://localhost:3000
+    description: Local Development Server
+
+tags:
+  - name: Authentication
+    description: Authentification et gestion des tokens
+  - name: Users
+    description: Gestion des profils utilisateurs
+  - name: Running
+    description: Séances de course
+  - name: Workouts
+    description: Séances d'entraînement
+  - name: Steps
+    description: Suivi des pas
+  - name: Weight
+    description: Suivi du poids
+  - name: Badges
+    description: Système de récompenses
+  - name: Friends
+    description: Gestion des amis
+  - name: Conversations
+    description: Messagerie et conversations
+  - name: Settings
+    description: Paramètres utilisateur
+  - name: Sync
+    description: Synchronisation des données au téléphone
+  - name: App Config
+    description: Configuration de l'application
+  - name: Health
+    description: Health check
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Authentification par Bearer Token (JWT)
+
+  schemas:
+    # ===== Auth Schemas =====
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 6
+          example: password123
+        name:
+          type: string
+          minLength: 1
+          example: John Doe
+        age:
+          type: integer
+          minimum: 13
+          maximum: 120
+          example: 30
+        heightCm:
+          type: number
+          maximum: 300
+          example: 180
+        weightKg:
+          type: number
+          maximum: 500
+          example: 75
+        gender:
+          type: string
+          enum: [male, female, other]
+          example: male
+        dailyStepsGoal:
+          type: integer
+          minimum: 1000
+          maximum: 100000
+          example: 10000
+        fitnessLevel:
+          type: string
+          enum: [beginner, intermediate, advanced]
+          example: intermediate
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          example: password123
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT Access Token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: Refresh Token pour renouveller l'access token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/UserBasic'
+
+    # ===== User Schemas =====
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        name:
+          type: string
+          example: John Doe
+        age:
+          type: integer
+          example: 30
+        heightCm:
+          type: number
+          example: 180
+        weightKg:
+          type: number
+          example: 75
+        gender:
+          type: string
+          enum: [male, female, other]
+          example: male
+        fitnessLevel:
+          type: string
+          enum: [beginner, intermediate, advanced]
+          example: intermediate
+        profileImageUrl:
+          type: string
+          nullable: true
+          format: uri
+          example: https://example.com/images/user.jpg
+        dailyStepsGoal:
+          type: integer
+          example: 10000
+        dailyCaloriesGoal:
+          type: number
+          example: 2000
+        weeklyWorkoutsGoal:
+          type: integer
+          example: 3
+        totalWorkouts:
+          type: integer
+          example: 42
+        currentStreak:
+          type: integer
+          example: 5
+        bestStreak:
+          type: integer
+          example: 15
+        onboardingComplete:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: 2025-01-15T10:30:00Z
+
+    UserBasic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        fitnessLevel:
+          type: string
+        profileImageUrl:
+          type: string
+          nullable: true
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        age:
+          type: integer
+          minimum: 13
+        heightCm:
+          type: number
+          positive: true
+        weightKg:
+          type: number
+          positive: true
+        gender:
+          type: string
+          enum: [male, female, other]
+        fitnessLevel:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        onboardingComplete:
+          type: boolean
+
+    GoalsUpdate:
+      type: object
+      properties:
+        dailyStepsGoal:
+          type: integer
+          minimum: 1000
+        dailyCaloriesGoal:
+          type: number
+          minimum: 100
+        weeklyWorkoutsGoal:
+          type: integer
+          minimum: 1
+
+    # ===== Running Schemas =====
+    RunningSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+          example: 3600
+        distanceKm:
+          type: number
+          example: 10.5
+        avgSpeedKmh:
+          type: number
+          example: 10.5
+        maxSpeedKmh:
+          type: number
+          example: 12
+        caloriesBurned:
+          type: number
+          example: 750
+        elevationGainM:
+          type: number
+          example: 150
+        avgHeartRate:
+          type: integer
+          example: 140
+        maxHeartRate:
+          type: integer
+          example: 165
+        weather:
+          type: string
+          nullable: true
+          example: sunny
+        temperatureC:
+          type: number
+          nullable: true
+          example: 22
+        notes:
+          type: string
+          nullable: true
+        isCompleted:
+          type: boolean
+        userId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        gpsPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/GPSPoint'
+
+    RunningSessionCreate:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+        distanceKm:
+          type: number
+        avgSpeedKmh:
+          type: number
+        maxSpeedKmh:
+          type: number
+        caloriesBurned:
+          type: number
+        elevationGainM:
+          type: number
+        elevationLossM:
+          type: number
+        avgHeartRate:
+          type: integer
+        maxHeartRate:
+          type: integer
+        weather:
+          type: string
+        temperatureC:
+          type: number
+        notes:
+          type: string
+        isCompleted:
+          type: boolean
+        gpsPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/GPSPointInput'
+
+    GPSPoint:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        latitude:
+          type: number
+          example: 48.8566
+        longitude:
+          type: number
+          example: 2.3522
+        altitudeM:
+          type: number
+          nullable: true
+        speedKmh:
+          type: number
+          nullable: true
+        accuracyM:
+          type: number
+          nullable: true
+        recordedAt:
+          type: string
+          format: date-time
+
+    GPSPointInput:
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        altitudeM:
+          type: number
+        speedKmh:
+          type: number
+        accuracyM:
+          type: number
+        recordedAt:
+          type: string
+          format: date-time
+
+    RunningStats:
+      type: object
+      properties:
+        totalSessions:
+          type: integer
+          example: 42
+        totalDistanceKm:
+          type: number
+          example: 525.5
+        totalDurationSeconds:
+          type: integer
+          example: 151200
+        totalCaloriesBurned:
+          type: number
+          example: 31500
+
+    # ===== Workout Schemas =====
+    Workout:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Upper Body
+        workoutType:
+          type: string
+          example: strength
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+        caloriesBurned:
+          type: number
+        notes:
+          type: string
+          nullable: true
+        exerciseCount:
+          type: integer
+        userId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        exerciseLogs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseLog'
+
+    WorkoutLight:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        workoutType:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+        caloriesBurned:
+          type: number
+        exerciseCount:
+          type: integer
+
+    WorkoutCreate:
+      type: object
+      required:
+        - name
+        - startTime
+        - endTime
+        - durationMinutes
+      properties:
+        name:
+          type: string
+        workoutType:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+        caloriesBurned:
+          type: number
+        notes:
+          type: string
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseInput'
+
+    ExerciseLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        exerciseId:
+          type: string
+        exerciseName:
+          type: string
+        exerciseType:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        setLogs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SetLog'
+        cardioLogs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardioLog'
+
+    ExerciseInput:
+      type: object
+      required:
+        - exerciseId
+        - exerciseName
+      properties:
+        exerciseId:
+          type: string
+        exerciseName:
+          type: string
+        exerciseType:
+          type: string
+        notes:
+          type: string
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/SetInput'
+        cardio:
+          $ref: '#/components/schemas/CardioInput'
+
+    SetLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        setNumber:
+          type: integer
+        reps:
+          type: integer
+        weightKg:
+          type: number
+        isCompleted:
+          type: boolean
+        restTimeSec:
+          type: integer
+
+    SetInput:
+      type: object
+      required:
+        - setNumber
+      properties:
+        setNumber:
+          type: integer
+        reps:
+          type: integer
+        weightKg:
+          type: number
+        isCompleted:
+          type: boolean
+        restTimeSec:
+          type: integer
+
+    CardioLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        durationMinutes:
+          type: number
+        distanceKm:
+          type: number
+        avgSpeedKmh:
+          type: number
+        maxSpeedKmh:
+          type: number
+        caloriesBurned:
+          type: number
+        avgHeartRate:
+          type: integer
+        maxHeartRate:
+          type: integer
+
+    CardioInput:
+      type: object
+      properties:
+        durationMinutes:
+          type: number
+        distanceKm:
+          type: number
+        avgSpeedKmh:
+          type: number
+        maxSpeedKmh:
+          type: number
+        caloriesBurned:
+          type: number
+        avgHeartRate:
+          type: integer
+        maxHeartRate:
+          type: integer
+
+    WorkoutStats:
+      type: object
+      properties:
+        totalWorkouts:
+          type: integer
+        totalCaloriesBurned:
+          type: number
+        workoutsThisWeek:
+          type: integer
+
+    # ===== Steps Schemas =====
+    DailySteps:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        steps:
+          type: integer
+        distanceKm:
+          type: number
+        caloriesBurned:
+          type: number
+        activeMinutes:
+          type: integer
+        goal:
+          type: integer
+        hourlySteps:
+          type: array
+          items:
+            $ref: '#/components/schemas/HourlySteps'
+
+    HourlySteps:
+      type: object
+      properties:
+        hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+        steps:
+          type: integer
+
+    DailyStepsUpdate:
+      type: object
+      properties:
+        steps:
+          type: integer
+        distanceKm:
+          type: number
+        caloriesBurned:
+          type: number
+        activeMinutes:
+          type: integer
+        goal:
+          type: integer
+        hourlyData:
+          type: array
+          items:
+            $ref: '#/components/schemas/HourlySteps'
+
+    WeeklyStepsStats:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailySteps'
+        totalSteps:
+          type: integer
+        averageSteps:
+          type: integer
+
+    # ===== Weight Schemas =====
+    WeightEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        weightKg:
+          type: number
+          example: 75.5
+        date:
+          type: string
+          format: date
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    WeightEntryCreate:
+      type: object
+      required:
+        - weightKg
+        - date
+      properties:
+        weightKg:
+          type: number
+        date:
+          type: string
+          format: date
+        note:
+          type: string
+
+    WeightEntryUpdate:
+      type: object
+      required:
+        - weightKg
+      properties:
+        weightKg:
+          type: number
+        note:
+          type: string
+
+    # ===== Badge Schemas =====
+    BadgeList:
+      type: object
+      properties:
+        unlocked:
+          type: array
+          items:
+            type: string
+            format: uuid
+          example: [badge-1, badge-2, badge-3]
+        unlockedAt:
+          type: object
+          additionalProperties:
+            type: string
+            format: date-time
+          example:
+            badge-1: '2025-01-15T10:30:00Z'
+            badge-2: '2025-01-20T14:45:00Z'
+
+    Badge:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        badgeId:
+          type: string
+        unlockedAt:
+          type: string
+          format: date-time
+
+    # ===== Friend Schemas =====
+    Friend:
+      type: object
+      properties:
+        friendshipId:
+          type: string
+          format: uuid
+        since:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/UserBasic'
+
+    FriendRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        from:
+          $ref: '#/components/schemas/UserBasic'
+        createdAt:
+          type: string
+          format: date-time
+
+    FriendRequestCreate:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+
+    FriendRequestResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, accepted]
+
+    # ===== Conversation Schemas =====
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        updatedAt:
+          type: string
+          format: date-time
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserBasic'
+        lastMessage:
+          $ref: '#/components/schemas/Message'
+        unreadCount:
+          type: integer
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        body:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        senderId:
+          type: string
+          format: uuid
+        sender:
+          $ref: '#/components/schemas/UserBasic'
+        workoutId:
+          type: string
+          format: uuid
+          nullable: true
+        runningId:
+          type: string
+          format: uuid
+          nullable: true
+        workout:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            durationMinutes:
+              type: integer
+            caloriesBurned:
+              type: number
+        running:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            distanceKm:
+              type: number
+            durationSeconds:
+              type: integer
+            caloriesBurned:
+              type: number
+
+    MessageCreate:
+      type: object
+      properties:
+        body:
+          type: string
+        workoutId:
+          type: string
+          format: uuid
+        runningId:
+          type: string
+          format: uuid
+
+    ConversationCreate:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          format: uuid
+
+    MessagesResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        nextCursor:
+          type: string
+          nullable: true
+
+    # ===== Settings Schemas =====
+    UserSettings:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        notifWorkoutReminders:
+          type: boolean
+        notifReminderHour:
+          type: integer
+          minimum: 0
+          maximum: 23
+        notifReminderMinute:
+          type: integer
+          minimum: 0
+          maximum: 59
+        notifStepGoalAlerts:
+          type: boolean
+        notifWeeklyProgress:
+          type: boolean
+        notifMotivationalQuotes:
+          type: boolean
+        themeDark:
+          type: boolean
+
+    UserSettingsUpdate:
+      type: object
+      properties:
+        notifWorkoutReminders:
+          type: boolean
+        notifReminderHour:
+          type: integer
+          minimum: 0
+          maximum: 23
+        notifReminderMinute:
+          type: integer
+          minimum: 0
+          maximum: 59
+        notifStepGoalAlerts:
+          type: boolean
+        notifWeeklyProgress:
+          type: boolean
+        notifMotivationalQuotes:
+          type: boolean
+        themeDark:
+          type: boolean
+
+    # ===== App Config Schemas =====
+    AppConfig:
+      type: object
+      properties:
+        latestVersion:
+          type: string
+          example: 1.5.0
+        minRequiredVersion:
+          type: string
+          example: 1.0.0
+        currentVersion:
+          type: string
+          example: 1.0.0
+        updateRequired:
+          type: boolean
+        forceUpdate:
+          type: boolean
+        storeUrl:
+          type: string
+          format: uri
+        maintenanceMode:
+          type: boolean
+        maintenanceMessage:
+          type: string
+          nullable: true
+        releaseNotes:
+          type: string
+          nullable: true
+        featureFlags:
+          type: object
+          properties:
+            socialEnabled:
+              type: boolean
+            nutritionEnabled:
+              type: boolean
+            premiumEnabled:
+              type: boolean
+            aiCoachEnabled:
+              type: boolean
+            leaderboardEnabled:
+              type: boolean
+
+    # ===== Health Check Schemas =====
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          example: 1.0.0
+        database:
+          type: string
+          enum: [connected, unreachable]
+        uptime:
+          type: integer
+          description: Uptime en secondes
+          example: 3600
+
+    # ===== Error Schemas =====
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Code d'erreur
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          description: Message d'erreur lisible
+          example: Email or password incorrect
+
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    # ===== Sync Schemas =====
+    SyncAllResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        workouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workout'
+        running:
+          type: array
+          items:
+            $ref: '#/components/schemas/RunningSession'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailySteps'
+        badges:
+          $ref: '#/components/schemas/BadgeList'
+        friends:
+          type: array
+          items:
+            $ref: '#/components/schemas/Friend'
+        syncedAt:
+          type: string
+          format: date-time
+        totalItems:
+          type: object
+          properties:
+            workouts:
+              type: integer
+            running:
+              type: integer
+            steps:
+              type: integer
+            badges:
+              type: integer
+            friends:
+              type: integer
+
+    SyncSinceResponse:
+      type: object
+      properties:
+        since:
+          type: string
+          format: date-time
+        workouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workout'
+        running:
+          type: array
+          items:
+            $ref: '#/components/schemas/RunningSession'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailySteps'
+        badges:
+          type: array
+          items:
+            type: object
+            properties:
+              badgeId:
+                type: string
+              unlockedAt:
+                type: string
+                format: date-time
+        syncedAt:
+          type: string
+          format: date-time
+        totalNewItems:
+          type: object
+          properties:
+            workouts:
+              type: integer
+            running:
+              type: integer
+            steps:
+              type: integer
+            badges:
+              type: integer
+
+    SyncStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: synchronized
+        totalData:
+          type: object
+          properties:
+            workouts:
+              type: integer
+            running:
+              type: integer
+            steps:
+              type: integer
+            badges:
+              type: integer
+        lastUpdated:
+          type: object
+          properties:
+            workout:
+              type: string
+              format: date-time
+              nullable: true
+            running:
+              type: string
+              format: date-time
+              nullable: true
+            steps:
+              type: string
+              format: date-time
+              nullable: true
+        syncedAt:
+          type: string
+          format: date-time
+
+paths:
+  # ===== AUTHENTICATION =====
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: S'inscrire
+      description: Créer un nouveau compte utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Inscription réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Se connecter
+      description: Authentification par email/password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Email ou password incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Renouveler le token
+      description: Obtenir un nouveau access token avec un refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token renouvelé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+        '400':
+          description: Token manquant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Refresh token invalide ou expiré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Se déconnecter
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Déconnexion réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /auth/google:
+    get:
+      tags:
+        - Authentication
+      summary: OAuth Google - Redirection
+      description: Redirection vers Google pour authentification
+      externalDocs:
+        url: https://developers.google.com/identity/protocols/oauth2
+
+  /auth/google/callback:
+    get:
+      tags:
+        - Authentication
+      summary: OAuth Google - Callback
+      description: Callback de Google OAuth (redirection)
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+      responses:
+        '303':
+          description: Redirection vers deeplink avec tokens
+
+  # ===== USERS =====
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Récupérer mon profil
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profil utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Authentification requise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Utilisateur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags:
+        - Users
+      summary: Mettre à jour mon profil
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  email:
+                    type: string
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Users
+      summary: Supprimer mon compte
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Compte supprimé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /users/me/goals:
+    patch:
+      tags:
+        - Users
+      summary: Mettre à jour les objectifs
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalsUpdate'
+      responses:
+        '200':
+          description: Objectifs mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dailyStepsGoal:
+                    type: integer
+                  dailyCaloriesGoal:
+                    type: number
+                  weeklyWorkoutsGoal:
+                    type: integer
+
+  /users/search:
+    get:
+      tags:
+        - Users
+      summary: Chercher des utilisateurs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Terme de recherche (min 2 caractères)
+      responses:
+        '200':
+          description: Résultats de recherche
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserBasic'
+        '400':
+          description: Terme de recherche trop court
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ===== RUNNING =====
+  /running/stats/summary:
+    get:
+      tags:
+        - Running
+      summary: Statistiques généraldes courses
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistiques
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunningStats'
+
+  /running:
+    get:
+      tags:
+        - Running
+      summary: Lister les sessions de course
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Liste des sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+    post:
+      tags:
+        - Running
+      summary: Créer une session de course
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunningSessionCreate'
+      responses:
+        '201':
+          description: Session créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunningSession'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /running/{id}:
+    get:
+      tags:
+        - Running
+      summary: Récupérer une session
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Détails de la session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunningSession'
+        '404':
+          description: Session non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Running
+      summary: Supprimer une session
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session supprimée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  # ===== WORKOUTS =====
+  /workouts/stats/summary:
+    get:
+      tags:
+        - Workouts
+      summary: Statistiques des séances
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistiques
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutStats'
+
+  /workouts:
+    get:
+      tags:
+        - Workouts
+      summary: Lister les séances
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: details
+          in: query
+          schema:
+            type: string
+            enum: [full]
+      responses:
+        '200':
+          description: Liste des séances
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+
+    post:
+      tags:
+        - Workouts
+      summary: Créer une séance
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutCreate'
+      responses:
+        '201':
+          description: Séance créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ===== STEPS =====
+  /steps/today:
+    get:
+      tags:
+        - Steps
+      summary: Pas du jour
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Pas du jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailySteps'
+
+  /steps/stats/weekly:
+    get:
+      tags:
+        - Steps
+      summary: Statistiques pas (7 jours)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistiques hebdo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyStepsStats'
+
+  /steps:
+    get:
+      tags:
+        - Steps
+      summary: Lister les entrées
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Liste des entrées
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DailySteps'
+
+  /steps/{date}:
+    put:
+      tags:
+        - Steps
+      summary: Créer/mettre à jour les pas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DailyStepsUpdate'
+      responses:
+        '200':
+          description: Entrée sauvegardée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailySteps'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ===== WEIGHT =====
+  /weight:
+    get:
+      tags:
+        - Weight
+      summary: Lister les entrées
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Liste des entrées
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeightEntry'
+
+    post:
+      tags:
+        - Weight
+      summary: Créer une entrée
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeightEntryCreate'
+      responses:
+        '201':
+          description: Entrée créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeightEntry'
+        '409':
+          description: Entrée existante pour cette date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /weight/{date}:
+    put:
+      tags:
+        - Weight
+      summary: Mettre à jour le poids
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeightEntryUpdate'
+      responses:
+        '200':
+          description: Entrée mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeightEntry'
+
+  /weight/{id}:
+    delete:
+      tags:
+        - Weight
+      summary: Supprimer une entrée
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Entrée supprimée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  # ===== BADGES =====
+  /badges:
+    get:
+      tags:
+        - Badges
+      summary: Lister mes badges
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Badges débloqués
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadgeList'
+
+  /badges/{badgeId}:
+    post:
+      tags:
+        - Badges
+      summary: Débloquer un badge
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: badgeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Badge débloqué
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Badge'
+        '409':
+          description: Badge déjà débloqué
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ===== FRIENDS =====
+  /friends/request:
+    post:
+      tags:
+        - Friends
+      summary: Envoyer une demande
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FriendRequestCreate'
+      responses:
+        '201':
+          description: Demande envoyée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequestResponse'
+        '409':
+          description: Relationexistante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /friends:
+    get:
+      tags:
+        - Friends
+      summary: Lister mes amis
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste des amis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Friend'
+
+  /friends/requests:
+    get:
+      tags:
+        - Friends
+      summary: Demandes reçues
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Demandes en attente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FriendRequest'
+
+  /friends/sent:
+    get:
+      tags:
+        - Friends
+      summary: Demandes envoyées
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Demandes envoyées
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FriendRequest'
+
+  /friends/{id}/accept:
+    post:
+      tags:
+        - Friends
+      summary: Accepter une demande
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Demande acceptée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendRequestResponse'
+
+  /friends/{id}/decline:
+    post:
+      tags:
+        - Friends
+      summary: Refuser une demande
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Demande refusée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /friends/{id}:
+    delete:
+      tags:
+        - Friends
+      summary: Supprimer un ami
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ami supprimé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  # ===== CONVERSATIONS =====
+  /conversations:
+    get:
+      tags:
+        - Conversations
+      summary: Lister les conversations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste des conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+
+    post:
+      tags:
+        - Conversations
+      summary: Créer/récupérer une conversation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationCreate'
+      responses:
+        '201':
+          description: Conversation créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+        '404':
+          description: Utilisateur introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{id}/messages:
+    get:
+      tags:
+        - Conversations
+      summary: Lister les messages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Messages paginés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagesResponse'
+
+    post:
+      tags:
+        - Conversations
+      summary: Envoyer un message
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+      responses:
+        '201':
+          description: Message envoyé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Contenu nécessaire
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{id}/read:
+    post:
+      tags:
+        - Conversations
+      summary: Marquer comme lu
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Marquer comme lu
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
+  # ===== SETTINGS =====
+  /settings:
+    get:
+      tags:
+        - Settings
+      summary: Récupérer mes paramètres
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Paramètres utilisateur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+
+    patch:
+      tags:
+        - Settings
+      summary: Mettre à jour les paramètres
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettingsUpdate'
+      responses:
+        '200':
+          description: Paramètres mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+
+  # ===== SYNC =====
+  /sync/all:
+    get:
+      tags:
+        - Sync
+      summary: Synchroniser toutes les données
+      description: Récupère l'intégralité des données utilisateur pour un nouveau téléphone
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Synchronisation complète réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAllResponse'
+        '401':
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sync/since/{timestamp}:
+    get:
+      tags:
+        - Sync
+      summary: Synchroniser les données modifiées
+      description: Récupère les changements depuis un timestamp donné (en millisecondes)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: timestamp
+          in: path
+          required: true
+          schema:
+            type: number
+            description: Unix timestamp en millisecondes (Date.now())
+          example: 1680000000000
+      responses:
+        '200':
+          description: Synchronisation incrémentale réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncSinceResponse'
+        '400':
+          description: Timestamp invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sync/status:
+    get:
+      tags:
+        - Sync
+      summary: État de la synchronisation
+      description: Récupère le statut et les métriques de synchronisation
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statut réussi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStatusResponse'
+        '401':
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erreur serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ===== APP CONFIG =====
+  /app/config:
+    get:
+      tags:
+        - App Config
+      summary: Configuration de l'app
+      parameters:
+        - name: platform
+          in: query
+          schema:
+            type: string
+            enum: [android, ios]
+            default: android
+        - name: version
+          in: query
+          schema:
+            type: string
+            default: '0.0.0'
+      responses:
+        '200':
+          description: Configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppConfig'
+        '404':
+          description: Plateforme inconnue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ===== HEALTH =====
+  /ping:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        '200':
+          description: API en bonne santé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: Service dégradé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'

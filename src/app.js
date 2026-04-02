@@ -39,6 +39,12 @@ app.use(session({
 // ── Passport ──────────────────────────────────────────────────────
 app.use(passport.initialize());
 
+// ── Swagger/OpenAPI documentation (admin only) ───────────────────
+const { swaggerUi, swaggerDoc } = require('./swagger');
+const requireAdmin = require('./middleware/requireAdmin');
+app.use('/api-docs', requireAdmin, swaggerUi.serve);
+app.get('/api-docs', requireAdmin, swaggerUi.setup(swaggerDoc));
+
 // ── Routes API ────────────────────────────────────────────────────
 app.use('/ping',     require('./routes/ping'));
 app.use('/auth',     require('./routes/auth'));
@@ -49,6 +55,7 @@ app.use('/steps',    require('./routes/steps'));
 app.use('/weight',   require('./routes/weight'));
 app.use('/badges',   require('./routes/badges'));
 app.use('/settings', require('./routes/settings'));
+app.use('/sync',           require('./routes/sync'));
 app.use('/app',           require('./routes/appConfig'));
 app.use('/conversations', require('./routes/messages'));
 app.use('/friends',       require('./routes/friends'));
