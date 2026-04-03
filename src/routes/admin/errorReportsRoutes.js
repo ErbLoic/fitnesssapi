@@ -1,8 +1,6 @@
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
 const requireAdmin = require('../../middleware/requireAdmin');
-
-const prisma = new PrismaClient();
+const prisma = require('../../lib/prisma');
 
 const STATUS_COLUMNS = ['nouveau', 'en_cours', 'traite'];
 const STAGE_OPTIONS = ['dev', 'resolu', 'en_prod'];

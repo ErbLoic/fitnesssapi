@@ -1,10 +1,8 @@
 const router = require('express').Router();
 const { z } = require('zod');
-const { PrismaClient } = require('@prisma/client');
 const requireAuth = require('../middleware/requireAuth');
 const { transformRunningFromApp, formatRunningForApp, hashRunning } = require('../lib/transformers');
-
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 router.use(requireAuth);
 
 // GET /running/stats/summary

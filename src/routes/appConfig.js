@@ -1,8 +1,6 @@
 const router = require('express').Router();
 const semver = require('semver');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 // GET /app/config?platform=android&version=1.0.0
 router.get('/config', async (req, res) => {

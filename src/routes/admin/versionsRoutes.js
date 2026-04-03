@@ -1,8 +1,6 @@
 const router = require('express').Router();
-const { PrismaClient } = require('@prisma/client');
 const requireAdmin = require('../../middleware/requireAdmin');
-
-const prisma = new PrismaClient();
+const prisma = require('../../lib/prisma');
 
 // GET /admin/versions
 router.get('/versions', requireAdmin, async (req, res) => {
