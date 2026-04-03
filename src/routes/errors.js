@@ -28,7 +28,7 @@ router.post('/report', requireAuth, async (req, res) => {
     }
 
     const { errorMessage, pagePath, additionalInfo } = parsed.data;
-    const userId = req.user.id;
+    const userId = req.userId;
 
     const errorReport = await prisma.errorReport.create({
       data: {
@@ -61,7 +61,7 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     // Vérifier si l'utilisateur est admin
     const admin = await prisma.adminUser.findUnique({
-      where: { userId: req.user.id },
+      where: { userId: req.userId },
     });
 
     if (!admin) {
@@ -121,7 +121,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   try {
     // Vérifier si l'utilisateur est admin
     const admin = await prisma.adminUser.findUnique({
-      where: { userId: req.user.id },
+      where: { userId: req.userId },
     });
 
     if (!admin) {
@@ -171,7 +171,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   try {
     // Vérifier si l'utilisateur est admin
     const admin = await prisma.adminUser.findUnique({
-      where: { userId: req.user.id },
+      where: { userId: req.userId },
     });
 
     if (!admin) {
