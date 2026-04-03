@@ -31,7 +31,15 @@ const corsMiddleware = cors({
   origin(origin, callback) {
     if (!origin) return callback(null, true);
     if (allowedOrigins.length === 0) {
-      return callback(null, !isProduction);
+      // En prod avec aucun origin configuré, accepte le même domaine
+      if (isProduction) {
+        const host = process.env.RENDER_EXTERNAL_URL || process.env.ALLOWED_HOST || '';
+        if (host && origin.includes(host.replace(/^https?:\/\//, ''))) {
+          return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+      }
+      return callback(null, true); // Dev: accepte tout
     }
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
