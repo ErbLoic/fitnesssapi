@@ -59,6 +59,7 @@ app.use('/sync',           require('./routes/sync'));
 app.use('/app',           require('./routes/appConfig'));
 app.use('/conversations', require('./routes/messages'));
 app.use('/friends',       require('./routes/friends'));
+app.use('/errors',        require('./routes/errors'));
 app.use('/',              require('./routes/legal'));
 
 // ── Admin panel ───────────────────────────────────────────────────

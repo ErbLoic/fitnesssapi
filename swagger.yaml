@@ -44,6 +44,8 @@ tags:
     description: Configuration de l'application
   - name: Health
     description: Health check
+  - name: Error Reports
+    description: Rapports d'erreur des utilisateurs
 
 components:
   securitySchemes:
@@ -1050,6 +1052,116 @@ components:
           type: string
           description: Message d'erreur lisible
           example: Email or password incorrect
+
+    ErrorReportRequest:
+      type: object
+      required:
+        - errorMessage
+        - pagePath
+      properties:
+        errorMessage:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Message d'erreur
+          example: Impossible de charger les données
+        pagePath:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Chemin de la page d'où provient l'erreur
+          example: /running/123
+        additionalInfo:
+          type: object
+          description: Informations supplémentaires (stackTrace, userAgent, etc.)
+          example:
+            stackTrace: "Error at line 42..."
+            userAgent: "Mozilla/5.0..."
+
+    ErrorReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        userId:
+          type: string
+          format: uuid
+          example: 660e8400-e29b-41d4-a716-446655440111
+        errorMessage:
+          type: string
+          example: Impossible de charger les données
+        pagePath:
+          type: string
+          example: /running/123
+        additionalInfo:
+          type: object
+          nullable: true
+          example:
+            stackTrace: "Error at line 42..."
+        status:
+          type: string
+          enum: [nouveau, en_cours, traite]
+          example: nouveau
+        workflowStage:
+          type: string
+          enum: [dev, resolu, en_prod]
+          example: dev
+        ownerName:
+          type: string
+          nullable: true
+          example: Pascal
+        createdAt:
+          type: string
+          format: date-time
+          example: 2026-04-03T10:30:00.000Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2026-04-03T10:35:00.000Z
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+
+    ErrorReportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        errorReport:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+
+    ErrorReportUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [nouveau, en_cours, traite]
+        workflowStage:
+          type: string
+          enum: [dev, resolu, en_prod]
+        ownerName:
+          type: string
+          nullable: true
+          maxLength: 100
 
     PaginatedResponse:
       type: object
@@ -2367,6 +2479,216 @@ paths:
                 $ref: '#/components/schemas/AppConfig'
         '404':
           description: Plateforme inconnue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ===== ERROR REPORTS =====
+  /errors/report:
+    post:
+      tags:
+        - Error Reports
+      summary: Signaler une erreur
+      description: Enregistrer une nouvelle erreur rapportée par l'utilisateur
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErrorReportRequest'
+      responses:
+        '201':
+          description: Erreur enregistrée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorReportResponse'
+        '400':
+          description: Validation échouée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /errors:
+    get:
+      tags:
+        - Error Reports
+      summary: Récupérer les rapports d'erreur
+      description: Lister tous les rapports d'erreur (admin uniquement)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Numéro de page
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+          description: Nombre de résultats par page
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filtrer par ID d'utilisateur
+      responses:
+        '200':
+          description: Liste des rapports d'erreur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ErrorReport'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+        '403':
+          description: Accès refusé (admin uniquement)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /errors/{id}:
+    get:
+      tags:
+        - Error Reports
+      summary: Récupérer un rapport d'erreur
+      description: Récupérer les détails d'un rapport d'erreur spécifique (admin uniquement)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID du rapport d'erreur
+      responses:
+        '200':
+          description: Détails du rapport d'erreur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/ErrorReport'
+        '404':
+          description: Rapport d'erreur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Accès refusé (admin uniquement)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags:
+        - Error Reports
+      summary: Mettre a jour un rapport d'erreur
+      description: Met a jour le statut, le workflow ou le responsable d'un rapport (admin uniquement)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID du rapport d'erreur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErrorReportUpdateRequest'
+      responses:
+        '200':
+          description: Rapport d'erreur mis a jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/ErrorReport'
+        '404':
+          description: Rapport d'erreur non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Donnees invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Accès refusé (admin uniquement)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Non authentifié
           content:
             application/json:
               schema:

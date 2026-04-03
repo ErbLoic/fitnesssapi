@@ -57,6 +57,7 @@ model User {
   adminUser         AdminUser?
   conversationParticipants ConversationParticipant[]
   sentMessages      Message[]       @relation("SentMessages")
+  errorReports      ErrorReport[]
 
   @@map("users")
 }
@@ -601,4 +602,23 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@map("messages")
+}
+
+model ErrorReport {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @db.Uuid
+  errorMessage    String
+  pagePath        String   @db.VarChar(255)
+  additionalInfo  Json?
+  status          String   @default("nouveau") @db.VarChar(30)
+  workflowStage   String   @default("dev") @db.VarChar(30)
+  ownerName       String?  @db.VarChar(100)
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, workflowStage, createdAt])
+  @@map("error_reports")
 }
