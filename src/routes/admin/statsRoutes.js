@@ -9,40 +9,32 @@ router.get('/stats', requireAdmin, async (req, res) => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const [
-      totalUsers, newUsersWeek, newUsersMonth,
-      totalWorkouts, workoutsWeek,
-      totalRuns, totalDistanceAgg,
-      totalStepsAgg, badgeCount,
-      friendshipCount, conversationCount,
-      workoutsByType, topExercisesRaw,
-      usersByDay,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-      prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
-      prisma.workout.count(),
-      prisma.workout.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-      prisma.runningSession.count(),
-      prisma.runningSession.aggregate({ _sum: { distanceKm: true } }),
-      prisma.dailySteps.aggregate({ _sum: { steps: true } }),
-      prisma.userBadge.count(),
-      prisma.friendship.count({ where: { status: 'accepted' } }),
-      prisma.conversation.count(),
-      prisma.workout.groupBy({ by: ['workoutType'], _count: { _all: true } }),
-      prisma.exerciseLog.groupBy({
-        by: ['exerciseName'],
-        _count: { _all: true },
-        orderBy: { _count: { exerciseName: 'desc' } },
-        take: 5,
-      }),
-      // Inscriptions des 7 derniers jours
-      prisma.user.findMany({
-        where: { createdAt: { gte: sevenDaysAgo } },
-        select: { createdAt: true },
-        orderBy: { createdAt: 'asc' },
-      }),
-    ]);
+    // Important: this route intentionally runs queries sequentially to prevent
+    // pool exhaustion on deployments configured with a low connection limit.
+    const totalUsers = await prisma.user.count();
+    const newUsersWeek = await prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } });
+    const newUsersMonth = await prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } });
+    const totalWorkouts = await prisma.workout.count();
+    const workoutsWeek = await prisma.workout.count({ where: { createdAt: { gte: sevenDaysAgo } } });
+    const totalRuns = await prisma.runningSession.count();
+    const totalDistanceAgg = await prisma.runningSession.aggregate({ _sum: { distanceKm: true } });
+    const totalStepsAgg = await prisma.dailySteps.aggregate({ _sum: { steps: true } });
+    const badgeCount = await prisma.userBadge.count();
+    const friendshipCount = await prisma.friendship.count({ where: { status: 'accepted' } });
+    const conversationCount = await prisma.conversation.count();
+    const workoutsByType = await prisma.workout.groupBy({ by: ['workoutType'], _count: { _all: true } });
+    const topExercisesRaw = await prisma.exerciseLog.groupBy({
+      by: ['exerciseName'],
+      _count: { _all: true },
+      orderBy: { _count: { exerciseName: 'desc' } },
+      take: 5,
+    });
+    // Inscriptions des 7 derniers jours
+    const usersByDay = await prisma.user.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
 
     // Calcul répartition types séances
     const typeMap = { strength: 0, cardio: 0, mixed: 0 };
@@ -67,6 +59,21 @@ router.get('/stats', requireAdmin, async (req, res) => {
     }
     const maxInscriptions = Math.max(...inscriptionsByDay.map(d => d.count), 1);
 
+    const chartData = {
+      inscriptions: {
+        labels: inscriptionsByDay.map(d => d.date.slice(5)),
+        values: inscriptionsByDay.map(d => d.count),
+      },
+      workoutTypes: {
+        labels: ['Strength', 'Cardio', 'Mixed'],
+        values: [typeMap.strength, typeMap.cardio, typeMap.mixed],
+      },
+      topExercises: {
+        labels: topExercisesRaw.map(e => e.exerciseName),
+        values: topExercisesRaw.map(e => e._count._all),
+      },
+    };
+
     res.render('admin/stats', {
       stats: {
         totalUsers, newUsersWeek, newUsersMonth,
@@ -79,6 +86,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
       topExercises: topExercisesRaw.map(e => ({ name: e.exerciseName, count: e._count._all })),
       inscriptionsByDay,
       maxInscriptions,
+      chartData,
       admin: req.session.adminUsername,
     });
   } catch (err) {

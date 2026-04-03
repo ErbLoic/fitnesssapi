@@ -3,10 +3,35 @@ const session = require('express-session');
 const passport = require('passport');
 const path = require('path');
 const compression = require('compression');
+const {
+  corsMiddleware,
+  securityHeaders,
+  requireHttps,
+  adminNoCache,
+  adminIpGuard,
+  globalRateLimit,
+  authRateLimit,
+  errorReportRateLimit,
+} = require('./middleware/security');
+const {
+  requestIdMiddleware,
+  apiFailureLogger,
+} = require('./middleware/securityLogging');
 
 require('./config/passport');
 
 const app = express();
+
+app.disable('x-powered-by');
+
+app.set('trust proxy', 1);
+
+app.use(securityHeaders);
+app.use(requireHttps);
+app.use(corsMiddleware);
+app.options('*', corsMiddleware);
+app.use(globalRateLimit);
+app.use(requestIdMiddleware);
 
 // ── Compression gzip (efficacité) ───────────────────────────────────
 app.use(compression());
@@ -15,8 +40,9 @@ app.use(compression());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ── Body parsers ──────────────────────────────────────────────────
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: process.env.BODY_LIMIT || '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: process.env.BODY_LIMIT || '1mb' }));
+app.use(apiFailureLogger);
 
 // ── View engine (admin) ───────────────────────────────────────────
 app.set('view engine', 'ejs');
@@ -29,9 +55,13 @@ app.use(session({
   secret: process.env.ADMIN_SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  rolling: true,
+  unset: 'destroy',
+  name: 'fitnesspro_admin_session',
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
     maxAge: 8 * 60 * 60 * 1000, // 8h
   },
 }));
@@ -47,7 +77,7 @@ app.get('/api-docs', requireAdmin, swaggerUi.setup(swaggerDoc));
 
 // ── Routes API ────────────────────────────────────────────────────
 app.use('/ping',     require('./routes/ping'));
-app.use('/auth',     require('./routes/auth'));
+app.use('/auth',     authRateLimit, require('./routes/auth'));
 app.use('/users',    require('./routes/users'));
 app.use('/workouts', require('./routes/workouts'));
 app.use('/running',  require('./routes/running'));
@@ -59,17 +89,24 @@ app.use('/sync',           require('./routes/sync'));
 app.use('/app',           require('./routes/appConfig'));
 app.use('/conversations', require('./routes/messages'));
 app.use('/friends',       require('./routes/friends'));
+app.use('/errors/report', errorReportRateLimit);
 app.use('/errors',        require('./routes/errors'));
 app.use('/',              require('./routes/legal'));
 
 // ── Admin panel ───────────────────────────────────────────────────
-app.use('/admin', require('./routes/admin/index'));
+app.use('/admin', adminIpGuard, adminNoCache, require('./routes/admin/index'));
 
 // ── Global error handler ──────────────────────────────────────────
 app.use((err, _req, res, _next) => {
   console.error(err);
   if (res.headersSent) return;
-  res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Erreur interne du serveur' });
+  res.locals.errorCode = 'INTERNAL_ERROR';
+  res.locals.errorMessage = err?.message || 'Unhandled server error';
+  res.status(500).json({
+    error: 'INTERNAL_ERROR',
+    message: 'Erreur interne du serveur',
+    requestId: _req.requestId,
+  });
 });
 
 module.exports = app;

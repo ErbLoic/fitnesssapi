@@ -622,3 +622,37 @@ model ErrorReport {
   @@index([status, workflowStage, createdAt])
   @@map("error_reports")
 }
+
+model AdminLoginAttempt {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username      String?  @db.VarChar(255)
+  ipAddress     String?  @db.VarChar(64)
+  userAgent     String?  @db.VarChar(512)
+  success       Boolean
+  failureReason String?  @db.VarChar(120)
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([success, createdAt])
+  @@index([ipAddress, createdAt])
+  @@map("admin_login_attempts")
+}
+
+model ApiFailureLog {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  method       String   @db.VarChar(10)
+  path         String   @db.VarChar(500)
+  statusCode   Int
+  errorCode    String?  @db.VarChar(120)
+  errorMessage String?
+  userId       String?  @db.VarChar(120)
+  ipAddress    String?  @db.VarChar(64)
+  userAgent    String?  @db.VarChar(512)
+  requestId    String?  @db.VarChar(64)
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([statusCode, createdAt])
+  @@index([path, createdAt])
+  @@map("api_failure_logs")
+}

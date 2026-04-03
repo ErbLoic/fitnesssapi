@@ -1,0 +1,67 @@
+<%
+  var page = 'security-logs';
+  var title = 'Security Logs';
+
+  var body = `
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Tentatives de connexion admin</span>
+        <span class="badge bg-dark">${totalLoginAttempts}</span>
+      </div>
+      <div class="card-body p-0" style="max-height:480px;overflow:auto;">
+        <table class="table table-sm table-striped mb-0">
+          <thead class="table-light">
+            <tr><th>Date</th><th>Username</th><th>IP</th><th>Resultat</th><th>Raison</th></tr>
+          </thead>
+          <tbody>
+            ${loginAttempts.map(a => `
+              <tr>
+                <td class="text-nowrap small">${new Date(a.createdAt).toLocaleString('fr-FR')}</td>
+                <td>${a.username || '—'}</td>
+                <td class="small">${a.ipAddress || '—'}</td>
+                <td>${a.success ? '<span class="badge bg-success">SUCCESS</span>' : '<span class="badge bg-danger">FAILED</span>'}</td>
+                <td class="small">${a.failureReason || '—'}</td>
+              </tr>
+            `).join('')}
+            ${loginAttempts.length === 0 ? '<tr><td colspan="5" class="text-muted text-center py-3">Aucune tentative</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer text-muted small">Page ${page} / ${Math.max(totalPagesLogin, 1)}</div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Echecs API (4xx/5xx)</span>
+        <span class="badge bg-dark">${totalApiFailures}</span>
+      </div>
+      <div class="card-body p-0" style="max-height:480px;overflow:auto;">
+        <table class="table table-sm table-striped mb-0">
+          <thead class="table-light">
+            <tr><th>Date</th><th>Route</th><th>Status</th><th>Code</th><th>Message</th></tr>
+          </thead>
+          <tbody>
+            ${apiFailures.map(f => `
+              <tr>
+                <td class="text-nowrap small">${new Date(f.createdAt).toLocaleString('fr-FR')}</td>
+                <td class="small"><code>${f.method} ${f.path}</code></td>
+                <td><span class="badge ${f.statusCode >= 500 ? 'bg-danger' : 'bg-warning text-dark'}">${f.statusCode}</span></td>
+                <td class="small">${f.errorCode || '—'}</td>
+                <td class="small">${(f.errorMessage || '—').replace(/</g, '&lt;').slice(0, 120)}</td>
+              </tr>
+            `).join('')}
+            ${apiFailures.length === 0 ? '<tr><td colspan="5" class="text-muted text-center py-3">Aucun echec API</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer text-muted small">Page ${page} / ${Math.max(totalPagesApi, 1)}</div>
+    </div>
+  </div>
+</div>
+`;
+%>
+<%- include('layout', { page, title, body, admin }) %>

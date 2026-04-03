@@ -72,20 +72,7 @@ var body = `
     <div class="card shadow-sm">
       <div class="card-header fw-semibold">📈 Inscriptions — 7 derniers jours</div>
       <div class="card-body">
-        <div class="d-flex align-items-flex-end gap-2" style="height:120px">
-          ${inscriptionsByDay.map(d => `
-          <div class="d-flex flex-column align-items-center flex-grow-1">
-            <div class="text-muted" style="font-size:.65rem">${d.count}</div>
-            <div style="
-              width:100%;
-              height:${Math.max(4, Math.round(d.count / maxInscriptions * 90))}px;
-              background:linear-gradient(180deg,#0d6efd,#6ea8fe);
-              border-radius:4px 4px 0 0;
-              transition:height .3s;
-            "></div>
-            <div class="text-muted mt-1" style="font-size:.6rem;white-space:nowrap">${d.date.slice(5)}</div>
-          </div>`).join('')}
-        </div>
+        <canvas id="inscriptionsChart" height="120"></canvas>
       </div>
     </div>
   </div>
@@ -95,33 +82,7 @@ var body = `
     <div class="card shadow-sm">
       <div class="card-header fw-semibold">🏋️ Répartition des séances</div>
       <div class="card-body">
-        <div class="mb-3">
-          <div class="d-flex justify-content-between mb-1">
-            <span class="small">Force (strength)</span>
-            <span class="small fw-bold">${typePercent.strength}%</span>
-          </div>
-          <div class="progress" style="height:8px">
-            <div class="progress-bar bg-success" style="width:${typePercent.strength}%"></div>
-          </div>
-        </div>
-        <div class="mb-3">
-          <div class="d-flex justify-content-between mb-1">
-            <span class="small">Cardio</span>
-            <span class="small fw-bold">${typePercent.cardio}%</span>
-          </div>
-          <div class="progress" style="height:8px">
-            <div class="progress-bar bg-warning" style="width:${typePercent.cardio}%"></div>
-          </div>
-        </div>
-        <div>
-          <div class="d-flex justify-content-between mb-1">
-            <span class="small">Mixte</span>
-            <span class="small fw-bold">${typePercent.mixed}%</span>
-          </div>
-          <div class="progress" style="height:8px">
-            <div class="progress-bar bg-info" style="width:${typePercent.mixed}%"></div>
-          </div>
-        </div>
+        <canvas id="workoutTypesChart" height="120"></canvas>
       </div>
     </div>
   </div>
@@ -129,7 +90,16 @@ var body = `
 
 <!-- Top 5 exercices -->
 <div class="row g-3">
-  <div class="col-md-6">
+  <div class="col-md-8">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">💪 Top 5 exercices (graphique)</div>
+      <div class="card-body">
+        <canvas id="topExercisesChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
     <div class="card shadow-sm">
       <div class="card-header fw-semibold">💪 Top 5 exercices (plateforme)</div>
       <div class="card-body p-0">
@@ -151,6 +121,85 @@ var body = `
     </div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+  (function () {
+    const chartData = {
+      inscriptions: {
+        labels: ${JSON.stringify(chartData.inscriptions.labels)},
+        values: ${JSON.stringify(chartData.inscriptions.values)},
+      },
+      workoutTypes: {
+        labels: ${JSON.stringify(chartData.workoutTypes.labels)},
+        values: ${JSON.stringify(chartData.workoutTypes.values)},
+      },
+      topExercises: {
+        labels: ${JSON.stringify(chartData.topExercises.labels)},
+        values: ${JSON.stringify(chartData.topExercises.values)},
+      },
+    };
+
+    new Chart(document.getElementById('inscriptionsChart'), {
+      type: 'line',
+      data: {
+        labels: chartData.inscriptions.labels,
+        datasets: [{
+          label: 'Inscriptions',
+          data: chartData.inscriptions.values,
+          borderColor: '#0d6efd',
+          backgroundColor: 'rgba(13, 110, 253, 0.18)',
+          tension: 0.35,
+          fill: true,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        plugins: { legend: { display: false } },
+      },
+    });
+
+    new Chart(document.getElementById('workoutTypesChart'), {
+      type: 'doughnut',
+      data: {
+        labels: chartData.workoutTypes.labels,
+        datasets: [{
+          data: chartData.workoutTypes.values,
+          backgroundColor: ['#198754', '#fd7e14', '#0dcaf0'],
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+      },
+    });
+
+    new Chart(document.getElementById('topExercisesChart'), {
+      type: 'bar',
+      data: {
+        labels: chartData.topExercises.labels,
+        datasets: [{
+          label: 'Occurrences',
+          data: chartData.topExercises.values,
+          backgroundColor: '#6f42c1',
+          borderRadius: 6,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },
+        plugins: { legend: { display: false } },
+      },
+    });
+  })();
+</script>
 `;
 %>
 <%- include('layout', { page, title, body, admin }) %>
