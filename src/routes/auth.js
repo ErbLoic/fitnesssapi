@@ -2,11 +2,9 @@ const router = require('express').Router();
 const passport = require('passport');
 const bcrypt = require('bcrypt');
 const { z } = require('zod');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { issueAccessToken, issueRefreshToken } = require('../lib/tokens');
 const requireAuth = require('../middleware/requireAuth');
-
-const prisma = new PrismaClient();
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -61,27 +59,36 @@ router.post('/register', async (req, res) => {
 
 // POST /auth/login
 router.post('/login', async (req, res) => {
-  const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: 'VALIDATION_ERROR', message: parsed.error.errors[0].message });
-  }
-  const { email, password } = parsed.data;
+  try {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'VALIDATION_ERROR', message: parsed.error.errors[0].message });
+    }
+    const { email, password } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.passwordHash) {
-    return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Email ou mot de passe incorrect' });
-  }
-  const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) {
-    return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Email ou mot de passe incorrect' });
-  }
-  if (user.isBanned) {
-    return res.status(403).json({ error: 'FORBIDDEN', message: 'Compte suspendu' });
-  }
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.passwordHash) {
+      return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Email ou mot de passe incorrect' });
+    }
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match) {
+      return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Email ou mot de passe incorrect' });
+    }
+    if (user.isBanned) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Compte suspendu' });
+    }
 
-  const accessToken = issueAccessToken(user);
-  const refreshToken = await issueRefreshToken(user.id);
-  res.json({ accessToken, refreshToken, user: { id: user.id, name: user.name, email: user.email } });
+    const accessToken = issueAccessToken(user);
+    const refreshToken = await issueRefreshToken(user.id);
+    return res.json({ accessToken, refreshToken, user: { id: user.id, name: user.name, email: user.email } });
+  } catch (error) {
+    console.error('Auth login error:', error.message);
+    return res.status(503).json({
+      error: 'SERVICE_UNAVAILABLE',
+      message: 'Service temporairement indisponible, reessayez.',
+      requestId: req.requestId,
+    });
+  }
 });
 
 // POST /auth/refresh

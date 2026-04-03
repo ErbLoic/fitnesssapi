@@ -1,7 +1,5 @@
 const crypto = require('crypto');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 const truncate = (value, max) => {
   if (value === undefined || value === null) return null;
@@ -16,6 +14,19 @@ const requestIdMiddleware = (req, res, next) => {
   req.requestId = incoming ? truncate(incoming, 64) : crypto.randomUUID();
   res.setHeader('x-request-id', req.requestId);
   next();
+};
+
+const shouldSkipApiFailureLog = (req, statusCode, path) => {
+  if (path === '/favicon.ico' && statusCode === 404) {
+    return true;
+  }
+
+  // Logout with expired/missing token is frequent and expected in mobile flows.
+  if (path === '/auth/logout' && statusCode === 401) {
+    return true;
+  }
+
+  return false;
 };
 
 const apiFailureLogger = (req, res, next) => {
@@ -41,6 +52,7 @@ const apiFailureLogger = (req, res, next) => {
 
   res.on('finish', () => {
     if (res.statusCode < 400) return;
+    if (shouldSkipApiFailureLog(req, res.statusCode, path)) return;
 
     let errorCode = null;
     let errorMessage = null;

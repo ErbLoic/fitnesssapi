@@ -39,6 +39,9 @@ app.use(compression());
 // ── Static files (public/) ────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Avoid noisy favicon 404 logs when clients probe root/favicon automatically.
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
+
 // ── Body parsers ──────────────────────────────────────────────────
 app.use(express.json({ limit: process.env.BODY_LIMIT || '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: process.env.BODY_LIMIT || '1mb' }));

@@ -1,12 +1,11 @@
 require('dotenv').config();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('./lib/prisma');
 
 // Force IPv4 — Render Free ne supporte pas IPv6 mais Supabase y répond par défaut
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 
 const app = require('./app');
-const prisma = new PrismaClient();
 
 const PORT = process.env.PORT || 3000;
 const LOG_RETENTION_DAYS = Number.parseInt(process.env.LOG_RETENTION_DAYS || '90', 10);
