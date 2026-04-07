@@ -146,6 +146,131 @@ router.post('/users/:id/ban', requireAdmin, async (req, res) => {
   }
 });
 
+// GET /admin/users/:id/add-workout (page de création complète)
+router.get('/users/:id/add-workout', requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.redirect('/admin/users');
+    
+    res.render('admin/add-workout', {
+      user,
+      admin: req.session.adminUsername,
+    });
+  } catch (err) {
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
+});
+
+// POST /admin/users/:id/add-workout (créer la séance avec toutes les données)
+router.post('/users/:id/add-workout', requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.redirect('/admin/users');
+
+    const { name, workoutType, startTime, endTime, durationMinutes, caloriesBurned, notes, exercises } = req.body;
+
+    // Validation
+    if (!name || !workoutType) {
+      return res.status(400).render('admin/error', {
+        message: 'Le nom et le type de séance sont requis',
+        admin: req.session.adminUsername,
+      });
+    }
+
+    // Parser les dates si c'est des strings
+    let start = startTime ? new Date(startTime) : new Date();
+    let end = endTime ? new Date(endTime) : new Date(start.getTime() + (parseInt(durationMinutes) || 0) * 60000);
+
+    // Vérifier que les dates sont valides
+    if (isNaN(start.getTime())) start = new Date();
+    if (isNaN(end.getTime())) end = new Date(start.getTime() + (parseInt(durationMinutes) || 0) * 60000);
+
+    // Parser les exercices s'ils sont en JSON string
+    let exercisesData = [];
+    if (exercises) {
+      try {
+        exercisesData = typeof exercises === 'string' ? JSON.parse(exercises) : exercises;
+        if (!Array.isArray(exercisesData)) exercisesData = [];
+      } catch (e) {
+        console.error('Erreur parsing exercises:', e);
+        exercisesData = [];
+      }
+    }
+
+    // Créer la séance
+    const workout = await prisma.workout.create({
+      data: {
+        userId,
+        name,
+        workoutType,
+        startTime: start,
+        endTime: end,
+        durationMinutes: parseInt(durationMinutes) || 0,
+        caloriesBurned: parseFloat(caloriesBurned) || 0,
+        notes: notes || null,
+        exerciseLogs: exercisesData.length > 0 ? {
+          create: exercisesData.map(ex => ({
+            exerciseId: ex.exerciseId || '',
+            exerciseName: ex.exerciseName || '',
+            exerciseType: ex.exerciseType || 'strength',
+            notes: ex.notes || null,
+            sortOrder: ex.sortOrder || 0,
+            setLogs: (ex.sets && Array.isArray(ex.sets)) ? {
+              create: ex.sets.map(set => ({
+                setNumber: set.setNumber || 0,
+                reps: set.reps || 0,
+                weightKg: set.weightKg || 0,
+                isCompleted: set.isCompleted !== false,
+                restTimeSec: set.restTimeSec || null,
+                setType: set.setType || 'normal',
+              }))
+            } : undefined,
+            cardioLogs: (ex.cardio) ? {
+              create: {
+                durationMinutes: ex.cardio.durationMinutes || 0,
+                distanceKm: ex.cardio.distanceKm || 0,
+                avgSpeedKmh: ex.cardio.avgSpeedKmh || 0,
+                maxSpeedKmh: ex.cardio.maxSpeedKmh || 0,
+              }
+            } : undefined,
+          }))
+        } : undefined,
+      },
+      include: {
+        exerciseLogs: { include: { setLogs: true, cardioLogs: true } }
+      }
+    });
+
+    // Incrémenter le compteur de workouts
+    await prisma.user.update({
+      where: { id: userId },
+      data: { totalWorkouts: { increment: 1 } }
+    });
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        action: 'CREATE_WORKOUT',
+        targetType: 'workout',
+        targetId: workout.id,
+        payload: {
+          userId,
+          name,
+          workoutType,
+          exerciseCount: exercisesData.length,
+        },
+      },
+    });
+
+    res.redirect(`/admin/users/${userId}`);
+  } catch (err) {
+    console.error('Erreur création workout:', err);
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
+});
+
 // POST /admin/users/:id/delete
 router.post('/users/:id/delete', requireAdmin, async (req, res) => {
   try {

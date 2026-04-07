@@ -507,6 +507,20 @@ components:
           items:
             $ref: '#/components/schemas/ExerciseInput'
 
+    WorkoutUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        workoutType:
+          type: string
+        durationMinutes:
+          type: integer
+        caloriesBurned:
+          type: number
+        notes:
+          type: string
+
     ExerciseLog:
       type: object
       properties:
@@ -1785,6 +1799,97 @@ paths:
                 $ref: '#/components/schemas/Workout'
         '400':
           description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workouts/{id}:
+    get:
+      tags:
+        - Workouts
+      summary: Récupérer une séance par ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Séance trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+        '404':
+          description: Séance non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags:
+        - Workouts
+      summary: Mettre à jour une séance
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutUpdate'
+      responses:
+        '200':
+          description: Séance mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+        '404':
+          description: Séance non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Workouts
+      summary: Supprimer une séance
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Séance supprimée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Séance non trouvée
           content:
             application/json:
               schema:

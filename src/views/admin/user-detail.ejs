@@ -79,7 +79,10 @@ var body = `
 
 <!-- Dernières séances -->
 <div class="card shadow-sm mt-3">
-  <div class="card-header fw-semibold">🏋️ Dernières séances (5)</div>
+  <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+    <span>🏋️ Dernières séances (5)</span>
+    <a href="/admin/users/${user.id}/add-workout" class="btn btn-sm btn-primary">➕ Ajouter une séance</a>
+  </div>
   <div class="card-body p-0">
     <table class="table table-sm table-hover mb-0">
       <thead class="table-light">

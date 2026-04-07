@@ -1,0 +1,343 @@
+<%
+  var page = 'users';
+  var title = 'Ajouter une séance';
+%>
+<%
+var body = `
+<a href="/admin/users/${user.id}" class="btn btn-outline-secondary btn-sm mb-3">← Retour au profil</a>
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">🏋️ Créer une séance pour ${user.name}</div>
+      <div class="card-body">
+        <form id="workoutForm" method="POST" action="/admin/users/${user.id}/add-workout">
+          <!-- Infos de base -->
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Nom de la séance *</label>
+              <input type="text" class="form-control" name="name" placeholder="Ex: Chest Day" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Type de séance *</label>
+              <select class="form-select" name="workoutType" required>
+                <option value="">Sélectionner...</option>
+                <option value="strength">Musculation</option>
+                <option value="cardio">Cardio</option>
+                <option value="flexibility">Souplesse</option>
+                <option value="sports">Sports</option>
+                <option value="mixed">Mixte</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Date/Heure début</label>
+              <input type="datetime-local" class="form-control" name="startTime" id="startTime">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Date/Heure fin</label>
+              <input type="datetime-local" class="form-control" name="endTime" id="endTime">
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Durée (minutes)</label>
+              <input type="number" class="form-control" name="durationMinutes" min="0" value="60" id="durationMinutes">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Calories brûlées</label>
+              <input type="number" class="form-control" name="caloriesBurned" min="0" step="0.01" placeholder="500">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Notes</label>
+            <textarea class="form-control" name="notes" rows="2" placeholder="Remarques..."></textarea>
+          </div>
+
+          <!-- Exercices -->
+          <div class="border-top pt-4 mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0">💪 Exercices</h5>
+              <button type="button" class="btn btn-sm btn-success" onclick="addExercise()">+ Ajouter exercice</button>
+            </div>
+            <div id="exercisesContainer"></div>
+            <input type="hidden" id="exercisesData" name="exercises" value="[]">
+          </div>
+
+          <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">✅ Créer la séance</button>
+            <a href="/admin/users/${user.id}" class="btn btn-secondary">Annuler</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel d'information -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold">📋 Résumé</div>
+      <div class="card-body">
+        <div class="small">
+          <p><strong>Utilisateur:</strong> ${user.name}</p>
+          <p><strong>Email:</strong> ${user.email || '—'}</p>
+          <p id="exerciseCount"><strong>Exercices:</strong> 0</p>
+          <p id="setCount"><strong>Total sets:</strong> 0</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">ℹ️ Guide</div>
+      <div class="card-body small">
+        <p><strong>Structure:</strong></p>
+        <ul class="mb-0">
+          <li>Une séance peut avoir plusieurs exercices</li>
+          <li>Chaque exercice peut avoir des sets ou des données cardio</li>
+          <li>Les sets sont pour la musculation</li>
+          <li>Les données cardio pour le cardio/running</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let exercisesData = [];
+
+function addExercise() {
+  const exIndex = exercisesData.length;
+  exercisesData.push({
+    exerciseId: '',
+    exerciseName: '',
+    exerciseType: 'strength',
+    notes: '',
+    sets: [],
+    cardio: null,
+  });
+  renderExercises();
+}
+
+function removeExercise(index) {
+  exercisesData.splice(index, 1);
+  renderExercises();
+}
+
+function addSet(exIndex) {
+  if (!exercisesData[exIndex].sets) exercisesData[exIndex].sets = [];
+  exercisesData[exIndex].sets.push({
+    setNumber: exercisesData[exIndex].sets.length + 1,
+    reps: 10,
+    weightKg: 0,
+    isCompleted: true,
+    restTimeSec: 60,
+  });
+  renderExercises();
+}
+
+function removeSet(exIndex, setIndex) {
+  exercisesData[exIndex].sets.splice(setIndex, 1);
+  renderExercises();
+}
+
+function toggleCardio(exIndex) {
+  if (exercisesData[exIndex].cardio) {
+    exercisesData[exIndex].cardio = null;
+  } else {
+    exercisesData[exIndex].cardio = {
+      durationMinutes: 30,
+      distanceKm: 5,
+      avgSpeedKmh: 10,
+      maxSpeedKmh: 15,
+      caloriesBurned: 300,
+      avgHeartRate: 130,
+      maxHeartRate: 150,
+    };
+  }
+  renderExercises();
+}
+
+function updateExercise(exIndex, field, value) {
+  exercisesData[exIndex][field] = value;
+}
+
+function updateSet(exIndex, setIndex, field, value) {
+  exercisesData[exIndex].sets[setIndex][field] = value;
+}
+
+function updateCardio(exIndex, field, value) {
+  if (!exercisesData[exIndex].cardio) exercisesData[exIndex].cardio = {};
+  exercisesData[exIndex].cardio[field] = value;
+}
+
+function renderExercises() {
+  const container = document.getElementById('exercisesContainer');
+  
+  if (exercisesData.length === 0) {
+    container.innerHTML = '<p class="text-muted">Aucun exercice. Cliquez sur "+ Ajouter exercice" pour commencer.</p>';
+  } else {
+    container.innerHTML = exercisesData.map((ex, exIdx) => 
+      '<div class="card mb-3 border-secondary">' +
+        '<div class="card-header d-flex justify-content-between align-items-center bg-light">' +
+          '<span><strong>' + (ex.exerciseName || 'Nouvel exercice') + '</strong></span>' +
+          '<button type="button" class="btn btn-sm btn-danger" onclick="removeExercise(' + exIdx + ')">Supprimer</button>' +
+        '</div>' +
+        '<div class="card-body">' +
+          '<div class="row mb-2">' +
+            '<div class="col-md-6">' +
+              '<label class="form-label small fw-semibold">ID Exercice</label>' +
+              '<input type="text" class="form-control form-control-sm" placeholder="bench_press" ' +
+                'value="' + ex.exerciseId + '" ' +
+                'onchange="updateExercise(' + exIdx + ', \'exerciseId\', this.value)">' +
+            '</div>' +
+            '<div class="col-md-6">' +
+              '<label class="form-label small fw-semibold">Nom *</label>' +
+              '<input type="text" class="form-control form-control-sm" placeholder="Bench Press" ' +
+                'value="' + ex.exerciseName + '" ' +
+                'onchange="updateExercise(' + exIdx + ', \'exerciseName\', this.value)" required>' +
+            '</div>' +
+          '</div>' +
+          '<div class="row mb-2">' +
+            '<div class="col-md-6">' +
+              '<label class="form-label small fw-semibold">Type</label>' +
+              '<select class="form-select form-select-sm" onchange="updateExercise(' + exIdx + ', \'exerciseType\', this.value)">' +
+                '<option value="strength" ' + (ex.exerciseType === 'strength' ? 'selected' : '') + '>Musculation</option>' +
+                '<option value="cardio" ' + (ex.exerciseType === 'cardio' ? 'selected' : '') + '>Cardio</option>' +
+                '<option value="flexibility" ' + (ex.exerciseType === 'flexibility' ? 'selected' : '') + '>Souplesse</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="col-md-6">' +
+              '<label class="form-label small fw-semibold">Notes</label>' +
+              '<input type="text" class="form-control form-control-sm" placeholder="RPE 8/10..." ' +
+                'value="' + ex.notes + '" ' +
+                'onchange="updateExercise(' + exIdx + ', \'notes\', this.value)">' +
+            '</div>' +
+          '</div>' +
+          (ex.exerciseType !== 'cardio' ? 
+            '<div class="border-top pt-2 mt-2">' +
+              '<div class="d-flex justify-content-between align-items-center mb-2">' +
+                '<small class="fw-semibold">Sets</small>' +
+                '<button type="button" class="btn btn-sm btn-primary" onclick="addSet(' + exIdx + ')">+ Set</button>' +
+              '</div>' +
+              ((ex.sets || []).length === 0 ? '<p class="text-muted small mb-0">Aucun set</p>' : '') +
+              ((ex.sets || []).map((set, setIdx) => 
+                '<div class="row g-1 mb-2 small">' +
+                  '<div class="col-2">' +
+                    '<input type="number" class="form-control form-control-sm" min="1" placeholder="Set #" ' +
+                      'value="' + set.setNumber + '" ' +
+                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'setNumber\', parseInt(this.value))">' +
+                  '</div>' +
+                  '<div class="col-2">' +
+                    '<input type="number" class="form-control form-control-sm" min="0" placeholder="Reps" ' +
+                      'value="' + set.reps + '" ' +
+                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'reps\', parseInt(this.value))">' +
+                  '</div>' +
+                  '<div class="col-2">' +
+                    '<input type="number" class="form-control form-control-sm" min="0" step="0.5" placeholder="Kg" ' +
+                      'value="' + set.weightKg + '" ' +
+                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'weightKg\', parseFloat(this.value))">' +
+                  '</div>' +
+                  '<div class="col-2">' +
+                    '<select class="form-select form-select-sm" onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'isCompleted\', this.value === \'true\')">' +
+                      '<option value="true" ' + (set.isCompleted ? 'selected' : '') + '>✓</option>' +
+                      '<option value="false" ' + (!set.isCompleted ? 'selected' : '') + '>✗</option>' +
+                    '</select>' +
+                  '</div>' +
+                  '<div class="col-2">' +
+                    '<input type="number" class="form-control form-control-sm" min="0" placeholder="Rest(s)" ' +
+                      'value="' + (set.restTimeSec || '') + '" ' +
+                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'restTimeSec\', parseInt(this.value) || null)">' +
+                  '</div>' +
+                  '<div class="col-1 d-flex">' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSet(' + exIdx + ', ' + setIdx + ')">×</button>' +
+                  '</div>' +
+                '</div>'
+              ).join('')) +
+            '</div>'
+          : '') +
+          '<div class="border-top pt-2 mt-2">' +
+            '<div class="form-check form-switch">' +
+              '<input class="form-check-input" type="checkbox" id="cardio_' + exIdx + '" ' +
+                (ex.cardio ? 'checked' : '') + ' ' +
+                'onchange="toggleCardio(' + exIdx + ')">' +
+              '<label class="form-check-label small" for="cardio_' + exIdx + '">' +
+                '<strong>Ajouter données cardio</strong>' +
+              '</label>' +
+            '</div>' +
+          '</div>' +
+          (ex.cardio ? 
+            '<div class="bg-light p-2 rounded mt-2">' +
+              '<div class="row g-2 small">' +
+                '<div class="col-md-6">' +
+                  '<label class="form-label small fw-semibold mb-1">Durée (min)</label>' +
+                  '<input type="number" class="form-control form-control-sm" min="0" ' +
+                    'value="' + (ex.cardio.durationMinutes || '') + '" ' +
+                    'onchange="updateCardio(' + exIdx + ', \'durationMinutes\', parseInt(this.value) || 0)">' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                  '<label class="form-label small fw-semibold mb-1">Distance (km)</label>' +
+                  '<input type="number" class="form-control form-control-sm" min="0" step="0.1" ' +
+                    'value="' + (ex.cardio.distanceKm || '') + '" ' +
+                    'onchange="updateCardio(' + exIdx + ', \'distanceKm\', parseFloat(this.value) || 0)">' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                  '<label class="form-label small fw-semibold mb-1">Vitesse moy (km/h)</label>' +
+                  '<input type="number" class="form-control form-control-sm" min="0" step="0.1" ' +
+                    'value="' + (ex.cardio.avgSpeedKmh || '') + '" ' +
+                    'onchange="updateCardio(' + exIdx + ', \'avgSpeedKmh\', parseFloat(this.value) || 0)">' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                  '<label class="form-label small fw-semibold mb-1">Vitesse max (km/h)</label>' +
+                  '<input type="number" class="form-control form-control-sm" min="0" step="0.1" ' +
+                    'value="' + (ex.cardio.maxSpeedKmh || '') + '" ' +
+                    'onchange="updateCardio(' + exIdx + ', \'maxSpeedKmh\', parseFloat(this.value) || 0)">' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                  '<label class="form-label small fw-semibold mb-1">Calories brûlées</label>' +
+                  '<input type="number" class="form-control form-control-sm" min="0" step="0.1" ' +
+                    'value="' + (ex.cardio.caloriesBurned || '') + '" ' +
+                    'onchange="updateCardio(' + exIdx + ', \'caloriesBurned\', parseFloat(this.value) || 0)">' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                  '<label class="form-label small fw-semibold mb-1">HR Moy</label>' +
+                  '<input type="number" class="form-control form-control-sm" min="0" ' +
+                    'value="' + (ex.cardio.avgHeartRate || '') + '" ' +
+                    'onchange="updateCardio(' + exIdx + ', \'avgHeartRate\', parseInt(this.value) || 0)">' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                  '<label class="form-label small fw-semibold mb-1">HR Max</label>' +
+                  '<input type="number" class="form-control form-control-sm" min="0" ' +
+                    'value="' + (ex.cardio.maxHeartRate || '') + '" ' +
+                    'onchange="updateCardio(' + exIdx + ', \'maxHeartRate\', parseInt(this.value) || 0)">' +
+                '</div>' +
+              '</div>' +
+            '</div>'
+          : '') +
+        '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  // Update counters
+  document.getElementById('exerciseCount').innerHTML = '<strong>Exercices:</strong> ' + exercisesData.length;
+  const totalSets = exercisesData.reduce((sum, ex) => sum + (ex.sets ? ex.sets.length : 0), 0);
+  document.getElementById('setCount').innerHTML = '<strong>Total sets:</strong> ' + totalSets;
+
+  // Update hidden input
+  document.getElementById('exercisesData').value = JSON.stringify(exercisesData);
+}
+
+// Initialize empty
+renderExercises();
+
+// Set default dates
+document.getElementById('startTime').valueAsDate = new Date();
+document.getElementById('endTime').valueAsDate = new Date();
+</script>
+`;
+%>
+<%- include('layout', { page, title, body, admin }) %>
