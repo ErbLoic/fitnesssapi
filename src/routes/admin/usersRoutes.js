@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const requireAdmin = require('../../middleware/requireAdmin');
 const prisma = require('../../lib/prisma');
+const { formatWorkoutForApp, formatRunningForApp } = require('../../lib/transformers');
 
 // GET /admin (dashboard)
 router.get('/', requireAdmin, async (req, res) => {
@@ -284,6 +285,39 @@ router.post('/users/:id/delete', requireAdmin, async (req, res) => {
   }
 });
 
+// GET /admin/workouts/:id (détail détaillé d'une séance)
+router.get('/workouts/:id', requireAdmin, async (req, res) => {
+  try {
+    const workout = await prisma.workout.findUnique({
+      where: { id: req.params.id },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        },
+        exerciseLogs: {
+          include: {
+            setLogs: true,
+            cardioLogs: true
+          }
+        }
+      }
+    });
+    
+    if (!workout) return res.redirect('/admin/users');
+    
+    // Utiliser le même formateur que l'API
+    const workoutData = formatWorkoutForApp(workout);
+    
+    res.render('admin/workout-detail', {
+      workout,
+      workoutData,
+      admin: req.session.adminUsername
+    });
+  } catch (err) {
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
+});
+
 // POST /admin/workouts/:id/delete (modération)
 router.post('/workouts/:id/delete', requireAdmin, async (req, res) => {
   try {
@@ -294,6 +328,34 @@ router.post('/workouts/:id/delete', requireAdmin, async (req, res) => {
       data: { action: 'DELETE_WORKOUT', targetType: 'workout', targetId: req.params.id, payload: { userId: workout.userId } },
     });
     res.redirect(`/admin/users/${workout.userId}`);
+  } catch (err) {
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
+});
+
+// GET /admin/running/:id (détail d'une course)
+router.get('/running/:id', requireAdmin, async (req, res) => {
+  try {
+    const running = await prisma.runningSession.findUnique({
+      where: { id: req.params.id },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        },
+        gpsPoints: true
+      }
+    });
+    
+    if (!running) return res.redirect('/admin/users');
+    
+    // Utiliser le même formateur que l'API
+    const runningData = formatRunningForApp(running);
+    
+    res.render('admin/running-detail', {
+      running,
+      runningData,
+      admin: req.session.adminUsername
+    });
   } catch (err) {
     res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
   }

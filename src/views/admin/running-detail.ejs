@@ -1,0 +1,115 @@
+<%
+  var page = 'users';
+  var title = 'Détail de la course';
+%>
+<%
+var body = `
+<a href="/admin/users/${running.userId}" class="btn btn-outline-secondary btn-sm mb-3">← Profil utilisateur</a>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold">🏃 Infos de la course</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Durée</p><h6 class="mb-0">${(running.durationSeconds / 60).toFixed(1)} min</h6></div></div>
+          <div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Distance</p><h6 class="mb-0">${running.distanceKm.toFixed(2)} km</h6></div></div>
+          <div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Vitesse moy</p><h6 class="mb-0">${running.avgSpeedKmh.toFixed(1)} km/h</h6></div></div>
+          <div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Vitesse max</p><h6 class="mb-0">${running.maxSpeedKmh.toFixed(1)} km/h</h6></div></div>
+          <div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Calories brûlées</p><h6 class="mb-0">${Math.round(running.caloriesBurned)} kcal</h6></div></div>
+          <div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Statut</p><h6 class="mb-0">${running.isCompleted ? '<span class="badge bg-success">✓ Complétée</span>' : '<span class="badge bg-warning">⧖ En cours</span>'}</h6></div></div>
+          <div class="col-12"><div class="border rounded p-3"><p class="text-muted small mb-1">Dates et heures</p><p class="mb-1"><strong>Début:</strong> ${new Date(running.startTime).toLocaleString('fr-FR')}</p><p class="mb-0"><strong>Fin:</strong> ${new Date(running.endTime).toLocaleString('fr-FR')}</p></div></div>
+          ${running.avgHeartRate ? '<div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Fréq. cardiaque moy</p><h6 class="mb-0">' + running.avgHeartRate + ' bpm</h6></div></div>' : ''}
+          ${running.maxHeartRate ? '<div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Fréq. cardiaque max</p><h6 class="mb-0">' + running.maxHeartRate + ' bpm</h6></div></div>' : ''}
+          ${running.elevationGainM ? '<div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Dénivelé positif</p><h6 class="mb-0">' + running.elevationGainM + ' m</h6></div></div>' : ''}
+          ${running.elevationLossM ? '<div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Dénivelé négatif</p><h6 class="mb-0">' + running.elevationLossM + ' m</h6></div></div>' : ''}
+          ${running.temperatureC ? '<div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Température</p><h6 class="mb-0">' + running.temperatureC + '°C</h6></div></div>' : ''}
+          ${running.weather ? '<div class="col-md-6"><div class="border rounded p-3"><p class="text-muted small mb-1">Météo</p><h6 class="mb-0">' + running.weather + '</h6></div></div>' : ''}
+          ${running.notes ? '<div class="col-12"><div class="alert alert-info mb-0"><strong>Notes:</strong> ' + running.notes + '</div></div>' : ''}
+        </div>
+      </div>
+    </div>
+
+    ${running.gpsPoints && running.gpsPoints.length > 0 ? '<div class="card shadow-sm mb-3"><div class="card-header fw-semibold">📍 Points GPS (' + running.gpsPoints.length + ')</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0"><thead class="table-light"><tr><th>Lat / Lng</th><th>Altitude (m)</th><th>Vitesse (m/s)</th><th>Précision (m)</th><th>Heure</th></tr></thead><tbody>' + running.gpsPoints.map(p => '<tr><td><small>' + p.latitude.toFixed(6) + ' / ' + p.longitude.toFixed(6) + '</small></td><td>' + (p.altitudeM || '—') + '</td><td>' + (p.speedMs ? p.speedMs.toFixed(2) : '—') + '</td><td>' + (p.accuracyM || '—') + '</td><td><small>' + new Date(p.recordedAt).toLocaleString('fr-FR') + '</small></td></tr>').join('') + '</tbody></table></div></div></div>' : '' }
+
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">📊 Résumé</div>
+      <div class="card-body">
+        <div class="row g-3 text-center">
+          <div class="col-md-4"><p class="text-muted small mb-1">Allure moyenne</p><h5 class="mb-0">${(() => { const pace = running.distanceKm > 0 ? (running.durationSeconds / 60 / running.distanceKm) : 0; const min = Math.floor(pace); const sec = Math.round((pace - min) * 60); return min + ':' + (sec < 10 ? '0' : '') + sec + ' min/km'; })()}</h5></div>
+          <div class="col-md-4"><p class="text-muted small mb-1">Points GPS enregistrés</p><h5 class="mb-0">${running.gpsPoints ? running.gpsPoints.length : 0}</h5></div>
+          <div class="col-md-4"><p class="text-muted small mb-1">Déniv. total</p><h5 class="mb-0">${((running.elevationGainM || 0) + (running.elevationLossM || 0)) + ' m'}</h5></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold">👤 Utilisateur</div>
+      <div class="card-body">
+        <p class="mb-2"><strong>${running.user.name}</strong></p>
+        <p class="text-muted small mb-0">${running.user.email || '—'}</p>
+        <hr>
+        <a href="/admin/users/${running.user.id}" class="btn btn-sm btn-outline-primary w-100">👁️ Voir le profil</a>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold">ℹ️ Infos techniques</div>
+      <div class="card-body small">
+        <p class="text-muted mb-2"><strong>ID:</strong><br><code class="text-break">${running.id}</code></p>
+        <p class="text-muted mb-0"><strong>Créée le:</strong><br>${new Date(running.createdAt).toLocaleString('fr-FR')}</p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#apiJson" style="cursor: pointer;">
+        <span class="fw-semibold">🔗 Réponse API JSON</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="copyJsonBtn" onclick="copyJsonToClipboard(event)" style="display: none;">📋 Copier</button>
+      </div>
+      <div class="collapse" id="apiJson">
+        <div class="card-body p-0">
+          <pre id="jsonContainer" style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; margin: 0; max-height: 500px; overflow-y: auto; font-size: 0.85rem; font-family: 'Courier New', Courier, monospace; border-radius: 0 0 0.25rem 0.25rem;"><code id="jsonContent"></code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">⚙️ Actions</div>
+      <div class="card-body">
+        <form method="POST" action="/admin/running/${running.id}/delete" onsubmit="return confirm('Supprimer cette course ?')" class="m-0">
+          <button class="btn btn-sm btn-danger w-100" type="submit">🗑️ Supprimer</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+%>
+<%- include('layout', { page, title, body, admin }) %>
+
+<div id="jsonData" data-json='<%- JSON.stringify(JSON.stringify(runningData)) %>' style="display:none;"></div>
+
+<script>
+// Afficher le JSON de la réponse API
+const jsonData = JSON.parse(document.getElementById('jsonData').dataset.json);
+const jsonString = JSON.stringify(JSON.parse(jsonData), null, 2);
+document.getElementById('jsonContent').textContent = jsonString;
+document.getElementById('copyJsonBtn').style.display = 'block';
+
+function copyJsonToClipboard(e) {
+  e.stopPropagation();
+  const jsonText = document.getElementById('jsonContent').textContent;
+  navigator.clipboard.writeText(jsonText).then(() => {
+    const btn = document.getElementById('copyJsonBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '✅ Copié!';
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+    }, 2000);
+  }).catch(err => {
+    alert('Erreur lors de la copie');
+  });
+}
+</script>

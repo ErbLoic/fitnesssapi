@@ -91,7 +91,7 @@ var body = `
       <tbody>
         ${recentWorkouts.map(w => `
         <tr>
-          <td>${w.name || '—'}</td>
+          <td><a href="/admin/workouts/${w.id}" class="text-decoration-none">${w.name || '—'}</a></td>
           <td><span class="badge bg-secondary">${w.workoutType}</span></td>
           <td>${w.durationMinutes ? w.durationMinutes + ' min' : '—'}</td>
           <td class="text-muted small">${new Date(w.startTime).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
@@ -118,13 +118,11 @@ var body = `
       <tbody>
         ${recentRuns.map(r => `
         <tr>
-          <td>${r.distanceKm ? r.distanceKm.toFixed(2) + ' km' : '—'}</td>
+          <td><a href="/admin/running/${r.id}" style="text-decoration: none; color: inherit;">${r.distanceKm ? r.distanceKm.toFixed(2) + ' km' : '—'}</a></td>
           <td>${r.durationSeconds ? Math.floor(r.durationSeconds / 60) + ' min' : '—'}</td>
           <td class="text-muted small">${new Date(r.startTime).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
           <td>
-            <form method="POST" action="/admin/running/${r.id}/delete" onsubmit="return confirm('Supprimer cette course ?')" style="display:inline">
-              <button class="btn btn-sm btn-outline-danger">Supprimer</button>
-            </form>
+            <a href="/admin/running/${r.id}" class="btn btn-sm btn-outline-primary">Voir</a>
           </td>
         </tr>`).join('')}
         ${recentRuns.length === 0 ? '<tr><td colspan="4" class="text-muted text-center py-3">Aucune course</td></tr>' : ''}

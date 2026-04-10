@@ -105,6 +105,9 @@ var body = `
     </div>
   </div>
 </div>
+`;
+%>
+<%- include('layout', { page, title, body, admin }) %>
 
 <script>
 let exercisesData = [];
@@ -192,19 +195,19 @@ function renderExercises() {
               '<label class="form-label small fw-semibold">ID Exercice</label>' +
               '<input type="text" class="form-control form-control-sm" placeholder="bench_press" ' +
                 'value="' + ex.exerciseId + '" ' +
-                'onchange="updateExercise(' + exIdx + ', \'exerciseId\', this.value)">' +
+                'onchange="updateExercise(' + exIdx + ', "exerciseId", this.value)">' +
             '</div>' +
             '<div class="col-md-6">' +
               '<label class="form-label small fw-semibold">Nom *</label>' +
               '<input type="text" class="form-control form-control-sm" placeholder="Bench Press" ' +
                 'value="' + ex.exerciseName + '" ' +
-                'onchange="updateExercise(' + exIdx + ', \'exerciseName\', this.value)" required>' +
+                'onchange="updateExercise(' + exIdx + ', "exerciseName", this.value)" required>' +
             '</div>' +
           '</div>' +
           '<div class="row mb-2">' +
             '<div class="col-md-6">' +
               '<label class="form-label small fw-semibold">Type</label>' +
-              '<select class="form-select form-select-sm" onchange="updateExercise(' + exIdx + ', \'exerciseType\', this.value)">' +
+              '<select class="form-select form-select-sm" onchange="updateExercise(' + exIdx + ', "exerciseType", this.value)">' +
                 '<option value="strength" ' + (ex.exerciseType === 'strength' ? 'selected' : '') + '>Musculation</option>' +
                 '<option value="cardio" ' + (ex.exerciseType === 'cardio' ? 'selected' : '') + '>Cardio</option>' +
                 '<option value="flexibility" ' + (ex.exerciseType === 'flexibility' ? 'selected' : '') + '>Souplesse</option>' +
@@ -214,7 +217,7 @@ function renderExercises() {
               '<label class="form-label small fw-semibold">Notes</label>' +
               '<input type="text" class="form-control form-control-sm" placeholder="RPE 8/10..." ' +
                 'value="' + ex.notes + '" ' +
-                'onchange="updateExercise(' + exIdx + ', \'notes\', this.value)">' +
+                'onchange="updateExercise(' + exIdx + ', "notes", this.value)">' +
             '</div>' +
           '</div>' +
           (ex.exerciseType !== 'cardio' ? 
@@ -229,20 +232,20 @@ function renderExercises() {
                   '<div class="col-2">' +
                     '<input type="number" class="form-control form-control-sm" min="1" placeholder="Set #" ' +
                       'value="' + set.setNumber + '" ' +
-                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'setNumber\', parseInt(this.value))">' +
+                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', "setNumber", parseInt(this.value))">' +
                   '</div>' +
                   '<div class="col-2">' +
                     '<input type="number" class="form-control form-control-sm" min="0" placeholder="Reps" ' +
                       'value="' + set.reps + '" ' +
-                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'reps\', parseInt(this.value))">' +
+                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', "reps", parseInt(this.value))">' +
                   '</div>' +
                   '<div class="col-2">' +
                     '<input type="number" class="form-control form-control-sm" min="0" step="0.5" placeholder="Kg" ' +
                       'value="' + set.weightKg + '" ' +
-                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'weightKg\', parseFloat(this.value))">' +
+                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', "weightKg", parseFloat(this.value))">' +
                   '</div>' +
                   '<div class="col-2">' +
-                    '<select class="form-select form-select-sm" onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'isCompleted\', this.value === \'true\')">' +
+                    '<select class="form-select form-select-sm" onchange="updateSet(' + exIdx + ', ' + setIdx + ', \"isCompleted\", this.value === \"true\")">' +
                       '<option value="true" ' + (set.isCompleted ? 'selected' : '') + '>✓</option>' +
                       '<option value="false" ' + (!set.isCompleted ? 'selected' : '') + '>✗</option>' +
                     '</select>' +
@@ -250,7 +253,7 @@ function renderExercises() {
                   '<div class="col-2">' +
                     '<input type="number" class="form-control form-control-sm" min="0" placeholder="Rest(s)" ' +
                       'value="' + (set.restTimeSec || '') + '" ' +
-                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', \'restTimeSec\', parseInt(this.value) || null)">' +
+                      'onchange="updateSet(' + exIdx + ', ' + setIdx + ', "restTimeSec", (this.value ? parseInt(this.value) : null))">' +
                   '</div>' +
                   '<div class="col-1 d-flex">' +
                     '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSet(' + exIdx + ', ' + setIdx + ')">×</button>' +
@@ -276,43 +279,43 @@ function renderExercises() {
                   '<label class="form-label small fw-semibold mb-1">Durée (min)</label>' +
                   '<input type="number" class="form-control form-control-sm" min="0" ' +
                     'value="' + (ex.cardio.durationMinutes || '') + '" ' +
-                    'onchange="updateCardio(' + exIdx + ', \'durationMinutes\', parseInt(this.value) || 0)">' +
+                    'onchange="updateCardio(' + exIdx + ', "durationMinutes", (this.value ? parseInt(this.value) : 0))">' +
                 '</div>' +
                 '<div class="col-md-6">' +
                   '<label class="form-label small fw-semibold mb-1">Distance (km)</label>' +
                   '<input type="number" class="form-control form-control-sm" min="0" step="0.1" ' +
                     'value="' + (ex.cardio.distanceKm || '') + '" ' +
-                    'onchange="updateCardio(' + exIdx + ', \'distanceKm\', parseFloat(this.value) || 0)">' +
+                    'onchange="updateCardio(' + exIdx + ', "distanceKm", (this.value ? parseFloat(this.value) : 0))">' +
                 '</div>' +
                 '<div class="col-md-6">' +
                   '<label class="form-label small fw-semibold mb-1">Vitesse moy (km/h)</label>' +
                   '<input type="number" class="form-control form-control-sm" min="0" step="0.1" ' +
                     'value="' + (ex.cardio.avgSpeedKmh || '') + '" ' +
-                    'onchange="updateCardio(' + exIdx + ', \'avgSpeedKmh\', parseFloat(this.value) || 0)">' +
+                    'onchange="updateCardio(' + exIdx + ', "avgSpeedKmh", (this.value ? parseFloat(this.value) : 0))">' +
                 '</div>' +
                 '<div class="col-md-6">' +
                   '<label class="form-label small fw-semibold mb-1">Vitesse max (km/h)</label>' +
                   '<input type="number" class="form-control form-control-sm" min="0" step="0.1" ' +
                     'value="' + (ex.cardio.maxSpeedKmh || '') + '" ' +
-                    'onchange="updateCardio(' + exIdx + ', \'maxSpeedKmh\', parseFloat(this.value) || 0)">' +
+                    'onchange="updateCardio(' + exIdx + ', "maxSpeedKmh", (this.value ? parseFloat(this.value) : 0))">' +
                 '</div>' +
                 '<div class="col-md-6">' +
                   '<label class="form-label small fw-semibold mb-1">Calories brûlées</label>' +
                   '<input type="number" class="form-control form-control-sm" min="0" step="0.1" ' +
                     'value="' + (ex.cardio.caloriesBurned || '') + '" ' +
-                    'onchange="updateCardio(' + exIdx + ', \'caloriesBurned\', parseFloat(this.value) || 0)">' +
+                    'onchange="updateCardio(' + exIdx + ', "caloriesBurned", (this.value ? parseFloat(this.value) : 0))">' +
                 '</div>' +
                 '<div class="col-md-6">' +
                   '<label class="form-label small fw-semibold mb-1">HR Moy</label>' +
                   '<input type="number" class="form-control form-control-sm" min="0" ' +
                     'value="' + (ex.cardio.avgHeartRate || '') + '" ' +
-                    'onchange="updateCardio(' + exIdx + ', \'avgHeartRate\', parseInt(this.value) || 0)">' +
+                    'onchange="updateCardio(' + exIdx + ', "avgHeartRate", (this.value ? parseInt(this.value) : 0))">' +
                 '</div>' +
                 '<div class="col-md-6">' +
                   '<label class="form-label small fw-semibold mb-1">HR Max</label>' +
                   '<input type="number" class="form-control form-control-sm" min="0" ' +
                     'value="' + (ex.cardio.maxHeartRate || '') + '" ' +
-                    'onchange="updateCardio(' + exIdx + ', \'maxHeartRate\', parseInt(this.value) || 0)">' +
+                    'onchange="updateCardio(' + exIdx + ', "maxHeartRate", (this.value ? parseInt(this.value) : 0))">' +
                 '</div>' +
               '</div>' +
             '</div>'
@@ -335,9 +338,7 @@ function renderExercises() {
 renderExercises();
 
 // Set default dates
-document.getElementById('startTime').valueAsDate = new Date();
-document.getElementById('endTime').valueAsDate = new Date();
+const now = new Date().toISOString().slice(0, 16);
+document.getElementById('startTime').value = now;
+document.getElementById('endTime').value = now;
 </script>
-`;
-%>
-<%- include('layout', { page, title, body, admin }) %>
