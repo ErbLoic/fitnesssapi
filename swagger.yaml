@@ -26,6 +26,10 @@ tags:
     description: Séances de course
   - name: Workouts
     description: Séances d'entraînement
+  - name: Programs
+    description: Programmes d'entrainement personnalises
+  - name: Workout Sessions
+    description: Brouillons et sauvegarde automatique des seances en cours
   - name: Steps
     description: Suivi des pas
   - name: Weight
@@ -647,6 +651,389 @@ components:
           type: number
         workoutsThisWeek:
           type: integer
+
+    # ===== Custom Program Schemas =====
+    CustomProgramExercise:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        dayId:
+          type: string
+          format: uuid
+        exerciseId:
+          type: string
+          nullable: true
+          example: exercise_123
+        customExerciseName:
+          type: string
+          nullable: true
+          example: Developpe couche libre
+        position:
+          type: integer
+          example: 1
+        targetSets:
+          type: integer
+          nullable: true
+          example: 4
+        targetReps:
+          type: string
+          nullable: true
+          example: 8-10
+        targetWeight:
+          type: number
+          nullable: true
+          example: 70
+        restSeconds:
+          type: integer
+          nullable: true
+          example: 90
+        notes:
+          type: string
+          nullable: true
+
+    CustomProgramExerciseInput:
+      type: object
+      description: Fournir exerciseId pour un exercice connu ou customExerciseName pour un exercice libre.
+      properties:
+        exerciseId:
+          type: string
+          nullable: true
+          example: exercise_123
+        customExerciseName:
+          type: string
+          nullable: true
+          example: Developpe couche libre
+        position:
+          type: integer
+          default: 0
+        targetSets:
+          type: integer
+          nullable: true
+          example: 4
+        targetReps:
+          type: string
+          nullable: true
+          example: 8-10
+        targetWeight:
+          type: number
+          nullable: true
+        restSeconds:
+          type: integer
+          nullable: true
+          example: 90
+        notes:
+          type: string
+          nullable: true
+
+    CustomProgramDay:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        programId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Push
+        position:
+          type: integer
+          example: 1
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomProgramExercise'
+
+    CustomProgramDayInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Push
+        position:
+          type: integer
+          default: 0
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomProgramExerciseInput'
+
+    CustomProgram:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Prise de masse 4 jours
+        description:
+          type: string
+          nullable: true
+        level:
+          type: string
+          nullable: true
+          example: intermediate
+        goal:
+          type: string
+          nullable: true
+          example: muscle_gain
+        isPublic:
+          type: boolean
+          example: false
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomProgramDay'
+
+    CustomProgramRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Prise de masse 4 jours
+        description:
+          type: string
+          nullable: true
+          example: Programme haut/bas du corps
+        level:
+          type: string
+          nullable: true
+          example: intermediate
+        goal:
+          type: string
+          nullable: true
+          example: muscle_gain
+        isPublic:
+          type: boolean
+          default: false
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomProgramDayInput'
+
+    CustomProgramListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomProgram'
+
+    DuplicateProgramRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Nouvelle version du programme
+
+    # ===== Workout Session Draft Schemas =====
+    WorkoutSessionSet:
+      type: object
+      properties:
+        setIndex:
+          type: integer
+          example: 1
+        reps:
+          type: integer
+          example: 10
+        weight:
+          type: number
+          example: 70
+        completed:
+          type: boolean
+          example: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    WorkoutSessionExercise:
+      type: object
+      description: Fournir exerciseId pour un exercice connu ou customExerciseName/name pour un exercice libre.
+      properties:
+        exerciseId:
+          type: string
+          nullable: true
+          example: exercise_123
+        customExerciseName:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+          example: Developpe couche
+        position:
+          type: integer
+          example: 1
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutSessionSet'
+
+    WorkoutSessionDraft:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        programId:
+          type: string
+          format: uuid
+          nullable: true
+        programDayId:
+          type: string
+          format: uuid
+          nullable: true
+        source:
+          type: string
+          enum: [free, program, template]
+          example: free
+        status:
+          type: string
+          enum: [draft, active, finished, abandoned]
+          example: active
+        isFinished:
+          type: boolean
+          example: false
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastSavedAt:
+          type: string
+          format: date-time
+        elapsedSeconds:
+          type: integer
+          example: 1110
+        revision:
+          type: integer
+          example: 4
+        notes:
+          type: string
+          nullable: true
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutSessionExercise'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WorkoutSessionDraftCreate:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [free, program, template]
+          default: free
+        programId:
+          type: string
+          format: uuid
+          nullable: true
+        programDayId:
+          type: string
+          format: uuid
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+        elapsedSeconds:
+          type: integer
+          default: 0
+        notes:
+          type: string
+          nullable: true
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutSessionExercise'
+
+    WorkoutSessionDraftPatch:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [free, program, template]
+        status:
+          type: string
+          enum: [draft, active, finished, abandoned]
+        programId:
+          type: string
+          format: uuid
+          nullable: true
+        programDayId:
+          type: string
+          format: uuid
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+        elapsedSeconds:
+          type: integer
+        notes:
+          type: string
+          nullable: true
+        revision:
+          type: integer
+          description: Revision connue par le mobile, utilisee pour eviter d'ecraser une sauvegarde plus recente.
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutSessionExercise'
+
+    WorkoutSessionCompleteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Push du soir
+        finishedAt:
+          type: string
+          format: date-time
+        caloriesBurned:
+          type: number
+          example: 320
+        notes:
+          type: string
+          nullable: true
+
+    WorkoutSessionCompleteResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/WorkoutSessionDraft'
+        workout:
+          $ref: '#/components/schemas/Workout'
 
     # ===== Steps Schemas =====
     DailySteps:
@@ -1890,6 +2277,365 @@ paths:
                     type: string
         '404':
           description: Séance non trouvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ===== CUSTOM PROGRAMS =====
+  /api/programs/custom:
+    get:
+      tags:
+        - Programs
+      summary: Lister les programmes personnalises
+      description: Retourne les programmes non archives de l'utilisateur connecte.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste des programmes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomProgramListResponse'
+        '401':
+          description: Non authentifie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Programs
+      summary: Creer un programme personnalise
+      description: Cree un programme complet avec ses jours et exercices.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomProgramRequest'
+      responses:
+        '201':
+          description: Programme cree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomProgram'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Non authentifie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/programs/custom/{id}:
+    get:
+      tags:
+        - Programs
+      summary: Recuperer un programme personnalise
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Programme trouve
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomProgram'
+        '404':
+          description: Programme introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Programs
+      summary: Remplacer un programme personnalise
+      description: Remplace le programme complet. Les jours et exercices de ce programme sont recrees depuis le body.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomProgramRequest'
+      responses:
+        '200':
+          description: Programme mis a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomProgram'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Programme introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Programs
+      summary: Archiver un programme personnalise
+      description: Soft-delete du programme via deletedAt.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Programme archive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Programme archive
+                  id:
+                    type: string
+                    format: uuid
+                  deletedAt:
+                    type: string
+                    format: date-time
+        '404':
+          description: Programme introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/programs/custom/{id}/duplicate:
+    post:
+      tags:
+        - Programs
+      summary: Dupliquer un programme personnalise
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateProgramRequest'
+      responses:
+        '201':
+          description: Programme duplique
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomProgram'
+        '404':
+          description: Programme introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ===== WORKOUT SESSION DRAFTS =====
+  /api/workout-sessions/active:
+    get:
+      tags:
+        - Workout Sessions
+      summary: Recuperer la seance active
+      description: Retourne la seance active ou brouillon de l'utilisateur, ou null si aucune seance n'est en cours.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Seance active ou null
+          content:
+            application/json:
+              schema:
+                nullable: true
+                oneOf:
+                  - $ref: '#/components/schemas/WorkoutSessionDraft'
+        '401':
+          description: Non authentifie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/workout-sessions/draft:
+    post:
+      tags:
+        - Workout Sessions
+      summary: Creer une seance brouillon
+      description: Cree une seance active. programId et programDayId sont optionnels pour permettre une seance libre.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutSessionDraftCreate'
+      responses:
+        '201':
+          description: Brouillon cree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSessionDraft'
+        '409':
+          description: Une seance active existe deja
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Programme introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/workout-sessions/draft/{id}:
+    patch:
+      tags:
+        - Workout Sessions
+      summary: Sauvegarder progressivement une seance
+      description: Accepte des updates partiels, met a jour lastSavedAt et incremente revision.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutSessionDraftPatch'
+      responses:
+        '200':
+          description: Brouillon sauvegarde
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSessionDraft'
+        '409':
+          description: Conflit de revision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Brouillon introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Workout Sessions
+      summary: Abandonner une seance en cours
+      description: Passe le brouillon en status abandoned sans supprimer physiquement la ligne.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Brouillon abandonne
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSessionDraft'
+        '404':
+          description: Brouillon introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/workout-sessions/draft/{id}/complete:
+    post:
+      tags:
+        - Workout Sessions
+      summary: Terminer une seance brouillon
+      description: Passe le brouillon en finished et cree une seance dans l'historique workouts.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutSessionCompleteRequest'
+      responses:
+        '201':
+          description: Seance terminee et ajoutee a l'historique
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSessionCompleteResponse'
+        '404':
+          description: Brouillon introuvable
           content:
             application/json:
               schema:

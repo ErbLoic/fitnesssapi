@@ -83,6 +83,8 @@ app.use('/ping',     require('./routes/ping'));
 app.use('/auth',     authRateLimit, require('./routes/auth'));
 app.use('/users',    require('./routes/users'));
 app.use('/workouts', require('./routes/workouts'));
+app.use('/programs', require('./routes/programs'));
+app.use('/workout-sessions', require('./routes/workoutSessions'));
 app.use('/running',  require('./routes/running'));
 app.use('/steps',    require('./routes/steps'));
 app.use('/weight',   require('./routes/weight'));
@@ -95,6 +97,10 @@ app.use('/friends',       require('./routes/friends'));
 app.use('/errors/report', errorReportRateLimit);
 app.use('/errors',        require('./routes/errors'));
 app.use('/',              require('./routes/legal'));
+
+// Aliases avec prefixe /api pour les nouveaux endpoints mobiles documentes.
+app.use('/api/programs', require('./routes/programs'));
+app.use('/api/workout-sessions', require('./routes/workoutSessions'));
 
 // ── Admin panel ───────────────────────────────────────────────────
 app.use('/admin', adminIpGuard, adminNoCache, require('./routes/admin/index'));

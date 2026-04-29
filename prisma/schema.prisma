@@ -34,6 +34,8 @@ model User {
   oauthProviders    OauthProvider[]
   refreshTokens     RefreshToken[]
   workouts          Workout[]
+  customPrograms    CustomProgram[]
+  workoutSessionDrafts WorkoutSessionDraft[]
   runningSessions   RunningSession[]
   dailySteps        DailySteps[]
   weightEntries     WeightEntry[]
@@ -108,6 +110,90 @@ model Workout {
 
   @@index([userId, startTime])
   @@map("workouts")
+}
+
+model CustomProgram {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?
+  level       String?   @db.VarChar(30)
+  goal        String?   @db.VarChar(50)
+  isPublic    Boolean   @default(false)
+  deletedAt   DateTime? @db.Timestamptz
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  days          CustomProgramDay[]
+  sessionDrafts WorkoutSessionDraft[]
+
+  @@index([userId, updatedAt])
+  @@index([userId, deletedAt])
+  @@map("custom_programs")
+}
+
+model CustomProgramDay {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  programId String   @db.Uuid
+  name      String   @db.VarChar(255)
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  program       CustomProgram           @relation(fields: [programId], references: [id], onDelete: Cascade)
+  exercises     CustomProgramExercise[]
+  sessionDrafts WorkoutSessionDraft[]
+
+  @@index([programId, position])
+  @@map("custom_program_days")
+}
+
+model CustomProgramExercise {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dayId              String   @db.Uuid
+  exerciseId         String?  @db.VarChar(100)
+  customExerciseName String?  @db.VarChar(255)
+  position           Int      @default(0)
+  targetSets         Int?
+  targetReps         String?  @db.VarChar(50)
+  targetWeight       Float?
+  restSeconds        Int?
+  notes              String?
+  createdAt          DateTime @default(now()) @db.Timestamptz
+  updatedAt          DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  day CustomProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+
+  @@index([dayId, position])
+  @@map("custom_program_exercises")
+}
+
+model WorkoutSessionDraft {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String    @db.Uuid
+  programId      String?   @db.Uuid
+  programDayId   String?   @db.Uuid
+  source         String    @default("free") @db.VarChar(20)
+  status         String    @default("draft") @db.VarChar(20)
+  isFinished     Boolean   @default(false)
+  startedAt      DateTime  @default(now()) @db.Timestamptz
+  finishedAt     DateTime? @db.Timestamptz
+  lastSavedAt    DateTime  @default(now()) @db.Timestamptz
+  elapsedSeconds Int       @default(0)
+  revision       Int       @default(1)
+  notes          String?
+  exercises      Json      @default("[]")
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+  updatedAt      DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program    CustomProgram?    @relation(fields: [programId], references: [id], onDelete: SetNull)
+  programDay CustomProgramDay? @relation(fields: [programDayId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, lastSavedAt])
+  @@index([programId])
+  @@map("workout_session_drafts")
 }
 
 model ExerciseLog {
