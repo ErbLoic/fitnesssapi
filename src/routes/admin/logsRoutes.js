@@ -1,8 +1,9 @@
 const router = require('express').Router();
 const requireAdmin = require('../../middleware/requireAdmin');
+const { requireAdminFull } = require('../../middleware/requireAdmin');
 const prisma = require('../../lib/prisma');
 
-router.get('/logs', requireAdmin, async (req, res) => {
+router.get('/logs', requireAdminFull, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = 50;
@@ -21,7 +22,7 @@ router.get('/logs', requireAdmin, async (req, res) => {
   }
 });
 
-router.get('/security-logs', requireAdmin, async (req, res) => {
+router.get('/security-logs', requireAdminFull, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = 50;

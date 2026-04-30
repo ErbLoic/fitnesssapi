@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const requireAdmin = require('../../middleware/requireAdmin');
+const { requireAdminFull } = require('../../middleware/requireAdmin');
 const prisma = require('../../lib/prisma');
 
 // GET /admin/badges
-router.get('/badges', requireAdmin, async (req, res) => {
+router.get('/badges', requireAdminFull, async (req, res) => {
   try {
     const [definitions, userBadges] = await Promise.all([
       prisma.badgeDefinition.findMany({ orderBy: { category: 'asc' } }),
@@ -24,7 +25,7 @@ router.get('/badges', requireAdmin, async (req, res) => {
 });
 
 // POST /admin/badges/definitions
-router.post('/badges/definitions', requireAdmin, async (req, res) => {
+router.post('/badges/definitions', requireAdminFull, async (req, res) => {
   const { badgeId, name, description, icon, category } = req.body;
   if (!badgeId || !name || !description) return res.redirect('/admin/badges?error=Champs+requis+manquants');
   try {
@@ -37,7 +38,7 @@ router.post('/badges/definitions', requireAdmin, async (req, res) => {
 });
 
 // POST /admin/badges/definitions/:id/toggle
-router.post('/badges/definitions/:id/toggle', requireAdmin, async (req, res) => {
+router.post('/badges/definitions/:id/toggle', requireAdminFull, async (req, res) => {
   try {
     const def = await prisma.badgeDefinition.findUnique({ where: { id: req.params.id } });
     if (!def) return res.redirect('/admin/badges');
@@ -49,7 +50,7 @@ router.post('/badges/definitions/:id/toggle', requireAdmin, async (req, res) => 
 });
 
 // POST /admin/badges/definitions/:id/delete
-router.post('/badges/definitions/:id/delete', requireAdmin, async (req, res) => {
+router.post('/badges/definitions/:id/delete', requireAdminFull, async (req, res) => {
   try {
     await prisma.badgeDefinition.delete({ where: { id: req.params.id } });
     res.redirect('/admin/badges?success=Badge+supprimé');
@@ -59,7 +60,7 @@ router.post('/badges/definitions/:id/delete', requireAdmin, async (req, res) => 
 });
 
 // POST /admin/badges/grant
-router.post('/badges/grant', requireAdmin, async (req, res) => {
+router.post('/badges/grant', requireAdminFull, async (req, res) => {
   const { userId, badgeId } = req.body;
   if (!userId || !badgeId) return res.redirect('/admin/badges?error=Champs+manquants');
   try {
@@ -72,7 +73,7 @@ router.post('/badges/grant', requireAdmin, async (req, res) => {
 });
 
 // POST /admin/badges/:userId/:badgeId/delete
-router.post('/badges/:userId/:badgeId/delete', requireAdmin, async (req, res) => {
+router.post('/badges/:userId/:badgeId/delete', requireAdminFull, async (req, res) => {
   try {
     await prisma.userBadge.deleteMany({ where: { userId: req.params.userId, badgeId: req.params.badgeId } });
     res.redirect('/admin/badges');

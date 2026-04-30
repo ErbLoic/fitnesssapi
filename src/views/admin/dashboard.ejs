@@ -1,111 +1,242 @@
 <%
   var page = 'dashboard';
   var title = 'Dashboard';
+  var readOnly = typeof adminIsReadOnly !== 'undefined' && adminIsReadOnly;
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function number(value) {
+    return Number(value || 0).toLocaleString('fr-FR');
+  }
+
+  function dateShort(value) {
+    return new Date(value).toLocaleDateString('fr-FR');
+  }
+
+  function dateTimeShort(value) {
+    return new Date(value).toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  var hasMaintenance = versions.some(v => v.maintenanceMode);
+  var appStatus = hasMaintenance ? 'Maintenance active' : 'Production stable';
+  var blockedUsers = recentUsers.filter(u => u.isBanned || u.isDisabled).length;
+
+  var metrics = [
+    ['bi-people', 'Utilisateurs', stats.users, 'metric-primary', 'Comptes inscrits'],
+    ['bi-activity', 'Seances muscu', stats.workouts, 'metric-success', 'Workouts crees'],
+    ['bi-stopwatch', 'Sessions course', stats.runs, 'metric-warning', 'Running logge'],
+    ['bi-graph-up-arrow', 'Pas totaux', stats.totalSteps, 'metric-purple', 'Depuis le suivi pas'],
+    ['bi-trophy', 'Badges debloques', stats.badges, 'metric-info', 'Progression utilisateurs'],
+    ['bi-chat-dots', 'Conversations', stats.conversations, 'metric-teal', 'Messagerie active'],
+  ];
+
   var body = `
-<div class="row g-3 mb-4">
-  <div class="col-md-3 col-6">
-    <div class="card stat-card shadow-sm">
-      <div class="card-body">
-        <div class="text-muted small">👥 Utilisateurs</div>
-        <div class="fs-2 fw-bold">${stats.users.toLocaleString()}</div>
-      </div>
+<style>
+  .dashboard-hero {
+    background: #0f172a;
+    color: #fff;
+    border-radius: 8px;
+    padding: 1.35rem;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .dashboard-hero:before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(120deg, rgba(37,99,235,0.28), transparent 42%),
+      linear-gradient(315deg, rgba(20,184,166,0.22), transparent 36%);
+    pointer-events: none;
+  }
+
+  .dashboard-hero > * {
+    position: relative;
+  }
+
+  .dashboard-kicker {
+    color: #93c5fd;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.73rem;
+    letter-spacing: 0.08em;
+  }
+
+  .quick-action {
+    min-height: 44px;
+  }
+
+  .metric-card {
+    height: 100%;
+    position: relative;
+  }
+
+  .metric-icon {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: #fff;
+    flex: 0 0 auto;
+  }
+
+  .metric-value {
+    font-size: 1.7rem;
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: 0;
+  }
+
+  .metric-label {
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .metric-primary { background: #2563eb; }
+  .metric-success { background: #16a34a; }
+  .metric-warning { background: #f59e0b; }
+  .metric-info { background: #0891b2; }
+  .metric-purple { background: #7c3aed; }
+  .metric-teal { background: #0d9488; }
+
+  .section-title {
+    font-size: 0.98rem;
+    font-weight: 850;
+  }
+
+  .status-dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    display: inline-block;
+    border-radius: 999px;
+  }
+
+  .status-dot-ok { background: #22c55e; }
+  .status-dot-warn { background: #f59e0b; }
+
+  .rank-badge {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2ff;
+    color: #3730a3;
+    font-weight: 850;
+  }
+</style>
+
+<div class="dashboard-hero mb-4">
+  <div class="row g-3 align-items-center">
+    <div class="col-lg-7">
+      <div class="dashboard-kicker mb-2">Vue operationnelle</div>
+      <h2 class="fw-bold mb-2">Pilotage FitnessPro</h2>
+      <p class="mb-0 text-white-50">Surveille les utilisateurs, l'activite sportive, les versions app et les actions d'administration depuis un seul ecran.</p>
     </div>
-  </div>
-  <div class="col-md-3 col-6">
-    <div class="card shadow-sm" style="border-left:4px solid #198754">
-      <div class="card-body">
-        <div class="text-muted small">🏋️ Séances muscu</div>
-        <div class="fs-2 fw-bold">${stats.workouts.toLocaleString()}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3 col-6">
-    <div class="card shadow-sm" style="border-left:4px solid #fd7e14">
-      <div class="card-body">
-        <div class="text-muted small">🏃 Sessions course</div>
-        <div class="fs-2 fw-bold">${stats.runs.toLocaleString()}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3 col-6">
-    <div class="card shadow-sm" style="border-left:4px solid #6f42c1">
-      <div class="card-body">
-        <div class="text-muted small">👟 Pas totaux</div>
-        <div class="fs-2 fw-bold">${stats.totalSteps.toLocaleString()}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 col-6">
-    <div class="card shadow-sm" style="border-left:4px solid #ffc107">
-      <div class="card-body">
-        <div class="text-muted small">🏅 Badges débloqués</div>
-        <div class="fs-2 fw-bold">${stats.badges.toLocaleString()}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 col-6">
-    <div class="card shadow-sm" style="border-left:4px solid #0dcaf0">
-      <div class="card-body">
-        <div class="text-muted small">🤝 Amitiés actives</div>
-        <div class="fs-2 fw-bold">${stats.friendships.toLocaleString()}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 col-6">
-    <div class="card shadow-sm" style="border-left:4px solid #20c997">
-      <div class="card-body">
-        <div class="text-muted small">💬 Conversations</div>
-        <div class="fs-2 fw-bold">${stats.conversations.toLocaleString()}</div>
+    <div class="col-lg-5">
+      <div class="row g-2">
+        <div class="col-sm-6">
+          <a class="btn btn-light w-100 quick-action" href="/admin/users"><i class="bi bi-people me-2"></i>Utilisateurs</a>
+        </div>
+        <div class="col-sm-6">
+          <a class="btn btn-outline-light w-100 quick-action" href="/admin/stats"><i class="bi bi-bar-chart me-2"></i>Stats</a>
+        </div>
+        ${readOnly ? '' : `<div class="col-sm-6">
+          <a class="btn btn-outline-light w-100 quick-action" href="/admin/versions"><i class="bi bi-phone me-2"></i>Versions</a>
+        </div>
+        <div class="col-sm-6">
+          <a class="btn btn-outline-light w-100 quick-action" href="/admin/error-reports"><i class="bi bi-kanban me-2"></i>Erreurs</a>
+        </div>`}
       </div>
     </div>
   </div>
 </div>
 
 <div class="row g-3 mb-4">
-  <!-- Derniers inscrits -->
-  <div class="col-md-6">
-    <div class="card shadow-sm h-100">
-      <div class="card-header fw-semibold">🆕 Derniers inscrits</div>
-      <div class="card-body p-0">
-        <table class="table table-sm table-hover mb-0">
-          <thead class="table-light">
-            <tr><th>Nom</th><th>Email</th><th>Date</th><th>Statut</th></tr>
-          </thead>
-          <tbody>
-            ${recentUsers.map(u => `
-            <tr>
-              <td><a href="/admin/users/${u.id}" class="text-decoration-none">${u.name}</a></td>
-              <td class="text-muted small">${u.email || '—'}</td>
-              <td class="text-muted small">${new Date(u.createdAt).toLocaleDateString('fr-FR')}</td>
-              <td>${u.isBanned ? '<span class="badge bg-danger">Banni</span>' : '<span class="badge bg-success">Actif</span>'}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
+  ${metrics.map(([icon, label, value, color, sub]) => `
+  <div class="col-xl-2 col-md-4 col-6">
+    <div class="card metric-card">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <span class="metric-icon ${color}"><i class="bi ${icon}"></i></span>
+          <div class="metric-label">${label}</div>
+        </div>
+        <div class="metric-value">${number(value)}</div>
+        <div class="text-muted small mt-1">${sub}</div>
+      </div>
+    </div>
+  </div>`).join('')}
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="section-title">Etat app</div>
+            <div class="text-muted small">Versions et maintenance</div>
+          </div>
+          <span class="badge ${hasMaintenance ? 'bg-warning text-dark' : 'bg-success'}">${appStatus}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-top">
+          <span class="text-muted">Amities actives</span>
+          <strong>${number(stats.friendships)}</strong>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-top">
+          <span class="text-muted">Utilisateurs bloques recents</span>
+          <strong>${number(blockedUsers)}</strong>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-top">
+          <span class="text-muted">Plateformes suivies</span>
+          <strong>${number(versions.length)}</strong>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Activité récente (logs) -->
-  <div class="col-md-6">
-    <div class="card shadow-sm h-100">
-      <div class="card-header fw-semibold">🕓 Activité récente</div>
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span class="section-title"><i class="bi bi-phone me-2"></i>Versions app</span>
+        ${readOnly ? '' : '<a href="/admin/versions" class="btn btn-sm btn-outline-primary">Gerer</a>'}
+      </div>
       <div class="card-body p-0">
-        <table class="table table-sm table-hover mb-0">
-          <thead class="table-light">
-            <tr><th>Action</th><th>Cible</th><th>Date</th></tr>
-          </thead>
-          <tbody>
-            ${recentLogs.map(l => `
-            <tr>
-              <td><span class="badge bg-secondary">${l.action}</span></td>
-              <td class="text-muted small">${l.targetType} · ${(l.targetId || '').slice(0, 8)}…</td>
-              <td class="text-muted small">${new Date(l.createdAt).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
-            </tr>`).join('')}
-            ${recentLogs.length === 0 ? '<tr><td colspan="3" class="text-muted text-center py-3">Aucune activité</td></tr>' : ''}
-          </tbody>
-        </table>
-        <div class="px-3 pb-2 pt-1">
-          <a href="/admin/logs" class="small text-muted">Voir tous les logs →</a>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>Plateforme</th><th>Derniere</th><th>Min requise</th><th>Maintenance</th><th>Store</th></tr>
+            </thead>
+            <tbody>
+              ${versions.map(v => `
+              <tr>
+                <td class="text-capitalize fw-semibold">${escapeHtml(v.platform)}</td>
+                <td>${escapeHtml(v.latestVersion)}</td>
+                <td>${escapeHtml(v.minRequiredVersion)}</td>
+                <td><span class="status-dot ${v.maintenanceMode ? 'status-dot-warn' : 'status-dot-ok'} me-2"></span>${v.maintenanceMode ? 'ON' : 'OFF'}</td>
+                <td>${v.storeUrl ? `<a href="${escapeHtml(v.storeUrl)}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>` : '<span class="text-muted small">-</span>'}</td>
+              </tr>`).join('')}
+              ${versions.length === 0 ? '<tr><td colspan="5" class="text-muted text-center py-4">Aucune version configuree</td></tr>' : ''}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -113,49 +244,113 @@
 </div>
 
 <div class="row g-3 mb-4">
-  <!-- Top utilisateurs -->
-  <div class="col-md-5">
-    <div class="card shadow-sm">
-      <div class="card-header fw-semibold">🏆 Top utilisateurs (séances)</div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span class="section-title"><i class="bi bi-person-plus me-2"></i>Derniers inscrits</span>
+        <a href="/admin/users" class="small text-decoration-none">Voir tout</a>
+      </div>
       <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-          <thead class="table-light">
-            <tr><th>#</th><th>Nom</th><th>Séances</th></tr>
-          </thead>
-          <tbody>
-            ${topUsers.map((u, i) => `
-            <tr>
-              <td class="text-muted">${i + 1}</td>
-              <td><a href="/admin/users/${u.id}" class="text-decoration-none">${u.name}</a></td>
-              <td><strong>${u.totalWorkouts}</strong></td>
-            </tr>`).join('')}
-            ${topUsers.length === 0 ? '<tr><td colspan="3" class="text-muted text-center py-3">Aucune donnée</td></tr>' : ''}
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>Nom</th><th>Email</th><th>Date</th><th>Statut</th></tr>
+            </thead>
+            <tbody>
+              ${recentUsers.map(u => `
+              <tr>
+                <td><a href="/admin/users/${escapeHtml(u.id)}" class="text-decoration-none fw-semibold">${escapeHtml(u.name || 'Sans nom')}</a></td>
+                <td class="text-muted small">${escapeHtml(u.email) || '-'}</td>
+                <td class="text-muted small">${dateShort(u.createdAt)}</td>
+                <td>${u.isDisabled ? '<span class="badge bg-secondary">Desactive</span>' : (u.isBanned ? '<span class="badge bg-danger">Banni</span>' : '<span class="badge bg-success">Actif</span>')}</td>
+              </tr>`).join('')}
+              ${recentUsers.length === 0 ? '<tr><td colspan="4" class="text-muted text-center py-4">Aucun utilisateur</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Versions app -->
-  <div class="col-md-7">
-    <div class="card shadow-sm">
-      <div class="card-header fw-semibold">⚙️ Versions app</div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span class="section-title"><i class="bi bi-clock-history me-2"></i>Activite recente</span>
+        ${readOnly ? '' : '<a href="/admin/logs" class="small text-decoration-none">Voir tout</a>'}
+      </div>
       <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-          <thead class="table-light">
-            <tr><th>Plateforme</th><th>Dernière</th><th>Min requise</th><th>Maintenance</th><th></th></tr>
-          </thead>
-          <tbody>
-            ${versions.map(v => `
-            <tr>
-              <td class="text-capitalize">${v.platform}</td>
-              <td>${v.latestVersion}</td>
-              <td>${v.minRequiredVersion}</td>
-              <td>${v.maintenanceMode ? '<span class="badge bg-danger">ON</span>' : '<span class="badge bg-success">OFF</span>'}</td>
-              <td><a href="/admin/versions" class="btn btn-sm btn-outline-primary">Modifier</a></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>Action</th><th>Cible</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              ${recentLogs.map(l => `
+              <tr>
+                <td><span class="badge bg-secondary">${escapeHtml(l.action)}</span></td>
+                <td class="text-muted small">${escapeHtml(l.targetType)} &middot; ${escapeHtml((l.targetId || '').slice(0, 8))}</td>
+                <td class="text-muted small">${dateTimeShort(l.createdAt)}</td>
+              </tr>`).join('')}
+              ${recentLogs.length === 0 ? '<tr><td colspan="3" class="text-muted text-center py-4">Aucune activite</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-5">
+    <div class="card h-100">
+      <div class="card-header section-title"><i class="bi bi-trophy me-2"></i>Top utilisateurs</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead class="table-light">
+              <tr><th>#</th><th>Nom</th><th>Seances</th></tr>
+            </thead>
+            <tbody>
+              ${topUsers.map((u, i) => `
+              <tr>
+                <td><span class="rank-badge">${i + 1}</span></td>
+                <td><a href="/admin/users/${escapeHtml(u.id)}" class="text-decoration-none fw-semibold">${escapeHtml(u.name || 'Sans nom')}</a></td>
+                <td><strong>${number(u.totalWorkouts)}</strong></td>
+              </tr>`).join('')}
+              ${topUsers.length === 0 ? '<tr><td colspan="3" class="text-muted text-center py-4">Aucune donnee</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="card h-100">
+      <div class="card-header section-title"><i class="bi bi-compass me-2"></i>Prochaines actions</div>
+      <div class="card-body">
+        <div class="row g-2">
+          ${readOnly ? '' : `<div class="col-sm-6">
+            <a href="/admin/security-logs" class="btn btn-outline-secondary w-100 text-start py-3">
+              <i class="bi bi-shield-lock me-2"></i>Verifier la securite
+            </a>
+          </div>
+          <div class="col-sm-6">
+            <a href="/admin/badges" class="btn btn-outline-secondary w-100 text-start py-3">
+              <i class="bi bi-award me-2"></i>Gerer les badges
+            </a>
+          </div>
+          <div class="col-sm-6">
+            <a href="/admin/error-reports" class="btn btn-outline-secondary w-100 text-start py-3">
+              <i class="bi bi-bug me-2"></i>Traiter les rapports
+            </a>
+          </div>`}
+          <div class="col-sm-6">
+            <a href="/api-docs" target="_blank" class="btn btn-outline-secondary w-100 text-start py-3">
+              <i class="bi bi-book me-2"></i>Ouvrir Swagger
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </div>

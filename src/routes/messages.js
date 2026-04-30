@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const requireAuth = require('../middleware/requireAuth');
 const prisma = require('../lib/prisma');
+const { encryptMessageBody, decryptMessage } = require('../lib/messageCrypto');
 
 router.use(requireAuth);
 
@@ -46,7 +47,7 @@ router.get('/', async (req, res) => {
       id: conv.id,
       updatedAt: conv.updatedAt,
       participants: conv.participants.map(p => p.user),
-      lastMessage: conv.messages[0] || null,
+      lastMessage: decryptMessage(conv.messages[0] || null),
       unreadCount,
     };
   }));
@@ -76,7 +77,10 @@ router.post('/', async (req, res) => {
   }
 
   // Vérifie que l'autre user existe
-  const other = await prisma.user.findUnique({ where: { id: otherId }, select: { id: true } });
+  const other = await prisma.user.findFirst({
+    where: { id: otherId, isDisabled: false, isSystem: false },
+    select: { id: true },
+  });
   if (!other) return res.status(404).json({ error: 'NOT_FOUND', message: 'Utilisateur introuvable' });
 
   const conv = await prisma.conversation.create({
@@ -111,7 +115,7 @@ router.get('/:id/messages', async (req, res) => {
   });
 
   const nextCursor = messages.length === take ? messages[messages.length - 1].id : null;
-  res.json({ messages: messages.reverse(), nextCursor });
+  res.json({ messages: messages.reverse().map(decryptMessage), nextCursor });
 });
 
 // POST /conversations/:id/messages — envoyer un message
@@ -128,7 +132,7 @@ router.post('/:id/messages', async (req, res) => {
     data: {
       conversationId: id,
       senderId: req.userId,
-      body: body || null,
+      body: body ? encryptMessageBody(body) : null,
       workoutId: workoutId || null,
       runningId: runningId || null,
     },
@@ -142,7 +146,7 @@ router.post('/:id/messages', async (req, res) => {
   // Met à jour updatedAt de la conversation
   await prisma.conversation.update({ where: { id }, data: { updatedAt: new Date() } });
 
-  res.status(201).json(message);
+  res.status(201).json(decryptMessage(message));
 });
 
 // POST /conversations/:id/read — marquer comme lu

@@ -1,11 +1,12 @@
 const router = require('express').Router();
 const requireAdmin = require('../../middleware/requireAdmin');
+const { requireAdminFull } = require('../../middleware/requireAdmin');
 const prisma = require('../../lib/prisma');
 
 const STATUS_COLUMNS = ['nouveau', 'en_cours', 'traite'];
 const STAGE_OPTIONS = ['dev', 'resolu', 'en_prod'];
 
-router.get('/error-reports', requireAdmin, async (req, res) => {
+router.get('/error-reports', requireAdminFull, async (req, res) => {
   try {
     const reports = await prisma.errorReport.findMany({
       include: {
@@ -45,7 +46,7 @@ router.get('/error-reports', requireAdmin, async (req, res) => {
   }
 });
 
-router.post('/error-reports/:id/update', requireAdmin, async (req, res) => {
+router.post('/error-reports/:id/update', requireAdminFull, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, workflowStage, ownerName } = req.body;

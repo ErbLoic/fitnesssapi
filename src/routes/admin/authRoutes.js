@@ -38,10 +38,15 @@ router.post('/login', adminLoginRateLimit, (req, res) => {
     });
   }
 
-  if (
-    username === process.env.ADMIN_USERNAME &&
-    password === process.env.ADMIN_PASSWORD
-  ) {
+  const isFullAdmin = username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD;
+  const isVisitorAdmin = (
+    process.env.ADMIN_VISITOR_USERNAME &&
+    process.env.ADMIN_VISITOR_PASSWORD &&
+    username === process.env.ADMIN_VISITOR_USERNAME &&
+    password === process.env.ADMIN_VISITOR_PASSWORD
+  );
+
+  if (isFullAdmin || isVisitorAdmin) {
     failedAdminLogins.delete(key);
     return req.session.regenerate((err) => {
       if (err) {
@@ -54,6 +59,7 @@ router.post('/login', adminLoginRateLimit, (req, res) => {
         return res.status(500).render('admin/login', { error: 'Erreur session, reessayez.' });
       }
       req.session.admin = true;
+      req.session.adminRole = isFullAdmin ? 'admin' : 'visitor';
       req.session.adminUsername = username;
       logAdminLoginAttempt({
         username,

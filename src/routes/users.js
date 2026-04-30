@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { z } = require('zod');
 const requireAuth = require('../middleware/requireAuth');
 const prisma = require('../lib/prisma');
+const { deactivateAccount } = require('../lib/accountDeletion');
 
 router.use(requireAuth);
 
@@ -9,11 +10,13 @@ router.use(requireAuth);
 router.get('/search', async (req, res) => {
   const q = (req.query.q || '').trim();
   if (q.length < 2) {
-    return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Le terme de recherche doit faire au moins 2 caractères' });
+    return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Le terme de recherche doit faire au moins 2 caracteres' });
   }
   const users = await prisma.user.findMany({
     where: {
       id: { not: req.userId },
+      isDisabled: false,
+      isSystem: false,
       name: { contains: q, mode: 'insensitive' },
     },
     select: { id: true, name: true, fitnessLevel: true, profileImageUrl: true },
@@ -84,8 +87,20 @@ router.patch('/me/goals', async (req, res) => {
 
 // DELETE /users/me
 router.delete('/me', async (req, res) => {
-  await prisma.user.delete({ where: { id: req.userId } });
-  res.json({ message: 'Compte supprimé avec succès' });
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId },
+    select: { id: true, isDisabled: true, isSystem: true },
+  });
+  if (!user || user.isDisabled || user.isSystem) {
+    return res.status(404).json({ error: 'NOT_FOUND', message: 'Utilisateur introuvable' });
+  }
+
+  const deactivated = await deactivateAccount(prisma, req.userId);
+  res.json({
+    message: 'Compte desactive. Suppression definitive planifiee dans 2 ans.',
+    deactivatedAt: deactivated.deactivatedAt,
+    scheduledDeletionAt: deactivated.scheduledDeletionAt,
+  });
 });
 
 module.exports = router;

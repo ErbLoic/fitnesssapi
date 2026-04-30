@@ -12,7 +12,7 @@ info:
     name: MIT
 
 servers:
-  - url: https://api.fitnesssapi.com/v1
+  - url: https://fitnesssapi.onrender.com
     description: Production Server
   - url: http://localhost:3000
     description: Local Development Server

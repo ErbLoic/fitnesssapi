@@ -13,6 +13,7 @@ passport.use(new LocalStrategy(
     try {
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user || !user.passwordHash) return done(null, false);
+      if (user.isDisabled || user.isSystem || user.isBanned) return done(null, false);
       const match = await bcrypt.compare(password, user.passwordHash);
       if (!match) return done(null, false);
       return done(null, user);
@@ -86,6 +87,9 @@ async function upsertOAuthUser(profile, provider, accessToken, refreshToken) {
   });
 
   if (existing) {
+    if (existing.user.isDisabled || existing.user.isSystem || existing.user.isBanned) {
+      throw new Error('Compte inactif');
+    }
     await prisma.oauthProvider.update({
       where: { id: existing.id },
       data: { accessToken, refreshToken },
@@ -95,6 +99,9 @@ async function upsertOAuthUser(profile, provider, accessToken, refreshToken) {
 
   // Check if user with same email exists
   let user = email ? await prisma.user.findUnique({ where: { email } }) : null;
+  if (user && (user.isDisabled || user.isSystem || user.isBanned)) {
+    throw new Error('Compte inactif');
+  }
 
   if (!user) {
     user = await prisma.user.create({

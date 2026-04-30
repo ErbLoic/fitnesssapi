@@ -1,6 +1,7 @@
 <%
   var page = 'users';
   var title = 'Utilisateurs';
+  var readOnly = typeof adminIsReadOnly !== 'undefined' && adminIsReadOnly;
 %>
 <%
 var paginationHtml = '';
@@ -29,15 +30,24 @@ var body = `
           <td>${u.oauthProviders.map(p => `<span class="badge bg-secondary">${p.provider}</span>`).join(' ')}</td>
           <td>${new Date(u.createdAt).toLocaleDateString('fr-FR')}</td>
           <td>${u._count.workouts}</td>
-          <td>${u.isBanned ? '<span class="badge bg-danger">Banni</span>' : '<span class="badge bg-success">Actif</span>'}</td>
+          <td>${u.isDisabled ? '<span class="badge bg-secondary">Desactive</span>' : (u.isBanned ? '<span class="badge bg-danger">Banni</span>' : '<span class="badge bg-success">Actif</span>')}</td>
           <td class="d-flex gap-1">
             <a href="/admin/users/${u.id}" class="btn btn-sm btn-outline-primary">Voir</a>
+            ${readOnly ? '' : `
             <form method="POST" action="/admin/users/${u.id}/ban" class="d-inline">
               <button class="btn btn-sm btn-outline-warning" type="submit">${u.isBanned ? 'Débannir' : 'Bannir'}</button>
             </form>
-            <form method="POST" action="/admin/users/${u.id}/delete" class="d-inline" onsubmit="return confirm('Supprimer cet utilisateur ?')">
+            ${u.isDisabled ? `
+            <form method="POST" action="/admin/users/${u.id}/reactivate" class="d-inline" onsubmit="return confirm('Reactiver cet utilisateur ?')">
+              <button class="btn btn-sm btn-outline-success" type="submit">Reactiver</button>
+            </form>` : `
+            <form method="POST" action="/admin/users/${u.id}/disable" class="d-inline" onsubmit="return confirm('Desactiver temporairement cet utilisateur ?')">
+              <button class="btn btn-sm btn-outline-secondary" type="submit">Desact.</button>
+            </form>`}
+            <form method="POST" action="/admin/users/${u.id}/delete" class="d-inline" onsubmit="return confirm('Desactiver cet utilisateur et planifier sa suppression definitive ?')">
               <button class="btn btn-sm btn-outline-danger" type="submit">Suppr.</button>
             </form>
+            `}
           </td>
         </tr>`).join('')}
       </tbody>

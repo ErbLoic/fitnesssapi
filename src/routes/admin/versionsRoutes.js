@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const requireAdmin = require('../../middleware/requireAdmin');
+const { requireAdminFull } = require('../../middleware/requireAdmin');
 const prisma = require('../../lib/prisma');
 
 // GET /admin/versions
-router.get('/versions', requireAdmin, async (req, res) => {
+router.get('/versions', requireAdminFull, async (req, res) => {
   try {
     const versions = await prisma.appVersion.findMany({ orderBy: { platform: 'asc' } });
     res.render('admin/versions', { versions, success: req.query.success, admin: req.session.adminUsername });
@@ -13,7 +14,7 @@ router.get('/versions', requireAdmin, async (req, res) => {
 });
 
 // POST /admin/versions/:platform
-router.post('/versions/:platform', requireAdmin, async (req, res) => {
+router.post('/versions/:platform', requireAdminFull, async (req, res) => {
   try {
     const { platform } = req.params;
     const {

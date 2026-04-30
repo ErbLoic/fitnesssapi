@@ -1,7 +1,21 @@
 const router = require('express').Router();
 const requireAdmin = require('../../middleware/requireAdmin');
+const { requireAdminFull } = require('../../middleware/requireAdmin');
 const prisma = require('../../lib/prisma');
 const { formatWorkoutForApp, formatRunningForApp } = require('../../lib/transformers');
+const { deactivateAccount } = require('../../lib/accountDeletion');
+
+function maskEmail(email) {
+  if (!email) return null;
+  const [name, domain] = String(email).split('@');
+  if (!domain) return 'masque';
+  return `${name.slice(0, 2)}***@${domain}`;
+}
+
+function maskUserForVisitor(user) {
+  if (!user) return user;
+  return { ...user, email: maskEmail(user.email) };
+}
 
 // GET /admin (dashboard)
 router.get('/', requireAdmin, async (req, res) => {
@@ -21,7 +35,7 @@ router.get('/', requireAdmin, async (req, res) => {
       prisma.user.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, name: true, email: true, createdAt: true, isBanned: true },
+        select: { id: true, name: true, email: true, createdAt: true, isBanned: true, isDisabled: true },
       }),
       prisma.auditLog.findMany({
         take: 5,
@@ -47,8 +61,8 @@ router.get('/', requireAdmin, async (req, res) => {
         conversations: conversationCount,
       },
       versions,
-      recentUsers,
-      recentLogs,
+      recentUsers: req.adminRole === 'admin' ? recentUsers : recentUsers.map(maskUserForVisitor),
+      recentLogs: req.adminRole === 'admin' ? recentLogs : [],
       topUsers,
       admin: req.session.adminUsername,
     });
@@ -82,7 +96,8 @@ router.get('/users', requireAdmin, async (req, res) => {
     ]);
 
     res.render('admin/users', {
-      users, total, page, limit, search,
+      users: req.adminRole === 'admin' ? users : users.map(maskUserForVisitor),
+      total, page, limit, search,
       totalPages: Math.ceil(total / limit),
       admin: req.session.adminUsername,
     });
@@ -124,7 +139,8 @@ router.get('/users/:id', requireAdmin, async (req, res) => {
 
     if (!user) return res.redirect('/admin/users');
     res.render('admin/user-detail', {
-      user, recentWorkouts, recentRuns, friendCount, convoCount,
+      user: req.adminRole === 'admin' ? user : maskUserForVisitor(user),
+      recentWorkouts, recentRuns, friendCount, convoCount,
       admin: req.session.adminUsername,
     });
   } catch (err) {
@@ -133,7 +149,7 @@ router.get('/users/:id', requireAdmin, async (req, res) => {
 });
 
 // POST /admin/users/:id/ban
-router.post('/users/:id/ban', requireAdmin, async (req, res) => {
+router.post('/users/:id/ban', requireAdminFull, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) return res.redirect('/admin/users');
@@ -147,8 +163,74 @@ router.post('/users/:id/ban', requireAdmin, async (req, res) => {
   }
 });
 
+// POST /admin/users/:id/disable
+router.post('/users/:id/disable', requireAdminFull, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, isDisabled: true, isSystem: true },
+    });
+    if (!user || user.isSystem) return res.redirect('/admin/users');
+
+    await prisma.$transaction([
+      prisma.refreshToken.deleteMany({ where: { userId: user.id } }),
+      prisma.pushToken.deleteMany({ where: { userId: user.id } }),
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          isDisabled: true,
+          deactivatedAt: new Date(),
+          scheduledDeletionAt: null,
+        },
+      }),
+      prisma.auditLog.create({
+        data: { action: 'DISABLE_USER', targetType: 'user', targetId: user.id },
+      }),
+    ]);
+
+    res.redirect(`/admin/users/${user.id}`);
+  } catch (err) {
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
+});
+
+// POST /admin/users/:id/reactivate
+router.post('/users/:id/reactivate', requireAdminFull, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, email: true, isDisabled: true, isSystem: true },
+    });
+    if (!user || user.isSystem) return res.redirect('/admin/users');
+    if (!user.email) {
+      return res.status(400).render('admin/error', {
+        message: 'Ce compte est anonymise et ne peut pas etre reactive sans email.',
+        admin: req.session.adminUsername,
+      });
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          isDisabled: false,
+          deactivatedAt: null,
+          scheduledDeletionAt: null,
+        },
+      }),
+      prisma.auditLog.create({
+        data: { action: 'REACTIVATE_USER', targetType: 'user', targetId: user.id },
+      }),
+    ]);
+
+    res.redirect(`/admin/users/${user.id}`);
+  } catch (err) {
+    res.render('admin/error', { message: err.message, admin: req.session.adminUsername });
+  }
+});
+
 // GET /admin/users/:id/add-workout (page de création complète)
-router.get('/users/:id/add-workout', requireAdmin, async (req, res) => {
+router.get('/users/:id/add-workout', requireAdminFull, async (req, res) => {
   try {
     const userId = req.params.id;
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -164,7 +246,7 @@ router.get('/users/:id/add-workout', requireAdmin, async (req, res) => {
 });
 
 // POST /admin/users/:id/add-workout (créer la séance avec toutes les données)
-router.post('/users/:id/add-workout', requireAdmin, async (req, res) => {
+router.post('/users/:id/add-workout', requireAdminFull, async (req, res) => {
   try {
     const userId = req.params.id;
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -273,11 +355,27 @@ router.post('/users/:id/add-workout', requireAdmin, async (req, res) => {
 });
 
 // POST /admin/users/:id/delete
-router.post('/users/:id/delete', requireAdmin, async (req, res) => {
+router.post('/users/:id/delete', requireAdminFull, async (req, res) => {
   try {
-    await prisma.user.delete({ where: { id: req.params.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, isDisabled: true, isSystem: true },
+    });
+    if (!user || user.isDisabled || user.isSystem) {
+      return res.redirect('/admin/users');
+    }
+
+    const deactivated = await deactivateAccount(prisma, req.params.id);
     await prisma.auditLog.create({
-      data: { action: 'DELETE_USER', targetType: 'user', targetId: req.params.id },
+      data: {
+        action: 'DEACTIVATE_USER',
+        targetType: 'user',
+        targetId: req.params.id,
+        payload: {
+          deactivatedAt: deactivated.deactivatedAt,
+          scheduledDeletionAt: deactivated.scheduledDeletionAt,
+        },
+      },
     });
     res.redirect('/admin/users');
   } catch (err) {
@@ -286,7 +384,7 @@ router.post('/users/:id/delete', requireAdmin, async (req, res) => {
 });
 
 // GET /admin/workouts/:id (détail détaillé d'une séance)
-router.get('/workouts/:id', requireAdmin, async (req, res) => {
+router.get('/workouts/:id', requireAdminFull, async (req, res) => {
   try {
     const workout = await prisma.workout.findUnique({
       where: { id: req.params.id },
@@ -319,7 +417,7 @@ router.get('/workouts/:id', requireAdmin, async (req, res) => {
 });
 
 // POST /admin/workouts/:id/delete (modération)
-router.post('/workouts/:id/delete', requireAdmin, async (req, res) => {
+router.post('/workouts/:id/delete', requireAdminFull, async (req, res) => {
   try {
     const workout = await prisma.workout.findUnique({ where: { id: req.params.id }, select: { userId: true } });
     if (!workout) return res.redirect('/admin/users');
@@ -334,7 +432,7 @@ router.post('/workouts/:id/delete', requireAdmin, async (req, res) => {
 });
 
 // GET /admin/running/:id (détail d'une course)
-router.get('/running/:id', requireAdmin, async (req, res) => {
+router.get('/running/:id', requireAdminFull, async (req, res) => {
   try {
     const running = await prisma.runningSession.findUnique({
       where: { id: req.params.id },
@@ -362,7 +460,7 @@ router.get('/running/:id', requireAdmin, async (req, res) => {
 });
 
 // POST /admin/running/:id/delete (modération)
-router.post('/running/:id/delete', requireAdmin, async (req, res) => {
+router.post('/running/:id/delete', requireAdminFull, async (req, res) => {
   try {
     const run = await prisma.runningSession.findUnique({ where: { id: req.params.id }, select: { userId: true } });
     if (!run) return res.redirect('/admin/users');

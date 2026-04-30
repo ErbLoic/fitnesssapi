@@ -1,5 +1,6 @@
 require('dotenv').config();
 const prisma = require('./lib/prisma');
+const { purgeExpiredDisabledAccounts } = require('./lib/accountDeletion');
 
 // Force IPv4 — Render Free ne supporte pas IPv6 mais Supabase y répond par défaut
 const dns = require('dns');
@@ -10,6 +11,10 @@ const app = require('./app');
 const PORT = process.env.PORT || 3000;
 const LOG_RETENTION_DAYS = Number.parseInt(process.env.LOG_RETENTION_DAYS || '90', 10);
 const LOG_CLEANUP_INTERVAL_HOURS = Number.parseInt(process.env.LOG_CLEANUP_INTERVAL_HOURS || '24', 10);
+const LOG_CLEANUP_ENABLED = String(
+  process.env.LOG_CLEANUP_ENABLED || (process.env.NODE_ENV === 'production' ? 'true' : 'false'),
+).toLowerCase() === 'true';
+const ACCOUNT_CLEANUP_INTERVAL_HOURS = Number.parseInt(process.env.ACCOUNT_CLEANUP_INTERVAL_HOURS || '24', 10);
 
 const cleanupSecurityLogs = async () => {
   const cutoff = new Date(Date.now() - LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000);
@@ -32,12 +37,32 @@ const cleanupSecurityLogs = async () => {
   }
 };
 
+const cleanupDisabledAccounts = async () => {
+  try {
+    const deleted = await purgeExpiredDisabledAccounts(prisma);
+    if (deleted.count > 0) {
+      console.log(`[accounts] cleanup: deleted ${deleted.count} disabled accounts past scheduled deletion`);
+    }
+  } catch (error) {
+    console.warn('[accounts] cleanup failed:', error.message);
+  }
+};
+
 app.listen(PORT, () => {
   console.log(`FitnessPro API running on port ${PORT} [${process.env.NODE_ENV}]`);
 
-  // Purge automatique des logs de securite anciens (retention 90 jours par defaut)
-  cleanupSecurityLogs();
-  setInterval(cleanupSecurityLogs, Math.max(1, LOG_CLEANUP_INTERVAL_HOURS) * 60 * 60 * 1000);
+  // Purge automatique des logs de securite anciens.
+  // Activee par defaut en production, desactivee en local pour eviter de
+  // bloquer le demarrage quand Supabase/pooler n'est pas joignable.
+  if (LOG_CLEANUP_ENABLED) {
+    cleanupSecurityLogs();
+    setInterval(cleanupSecurityLogs, Math.max(1, LOG_CLEANUP_INTERVAL_HOURS) * 60 * 60 * 1000);
+  } else {
+    console.log('[security-logs] cleanup disabled');
+  }
+
+  cleanupDisabledAccounts();
+  setInterval(cleanupDisabledAccounts, Math.max(1, ACCOUNT_CLEANUP_INTERVAL_HOURS) * 60 * 60 * 1000);
 
   if (process.env.NODE_ENV === 'production') {
     const https = require('https');

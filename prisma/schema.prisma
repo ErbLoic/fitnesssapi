@@ -28,6 +28,10 @@ model User {
   bestStreak         Int       @default(0)
   onboardingComplete Boolean   @default(false)
   isBanned           Boolean   @default(false)
+  isDisabled         Boolean   @default(false)
+  isSystem           Boolean   @default(false)
+  deactivatedAt      DateTime? @db.Timestamptz
+  scheduledDeletionAt DateTime? @db.Timestamptz
   createdAt          DateTime  @default(now()) @db.Timestamptz
   updatedAt          DateTime  @default(now()) @updatedAt @db.Timestamptz
 
@@ -61,6 +65,8 @@ model User {
   sentMessages      Message[]       @relation("SentMessages")
   errorReports      ErrorReport[]
 
+  @@index([isDisabled, scheduledDeletionAt])
+  @@index([isSystem])
   @@map("users")
 }
 

@@ -1,5 +1,6 @@
 <%
   var page = 'users';
+  var readOnly = typeof adminIsReadOnly !== 'undefined' && adminIsReadOnly;
   var title = 'Détail utilisateur';
 %>
 <%
@@ -18,7 +19,7 @@ var body = `
           <tr><th>Niveau</th><td>${user.fitnessLevel}</td></tr>
           <tr><th>OAuth</th><td>${user.oauthProviders.map(p => `<span class="badge bg-secondary me-1">${p.provider}</span>`).join('') || '—'}</td></tr>
           <tr><th>Inscription</th><td>${new Date(user.createdAt).toLocaleString('fr-FR')}</td></tr>
-          <tr><th>Statut</th><td>${user.isBanned ? '<span class="badge bg-danger">Banni</span>' : '<span class="badge bg-success">Actif</span>'}</td></tr>
+          <tr><th>Statut</th><td>${user.isDisabled ? '<span class="badge bg-secondary">Desactive</span>' : (user.isBanned ? '<span class="badge bg-danger">Banni</span>' : '<span class="badge bg-success">Actif</span>')}</td></tr>
         </table>
       </div>
     </div>
@@ -81,7 +82,7 @@ var body = `
 <div class="card shadow-sm mt-3">
   <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
     <span>🏋️ Dernières séances (5)</span>
-    <a href="/admin/users/${user.id}/add-workout" class="btn btn-sm btn-primary">➕ Ajouter une séance</a>
+    ${readOnly ? '' : `<a href="/admin/users/${user.id}/add-workout" class="btn btn-sm btn-primary">➕ Ajouter une séance</a>`}
   </div>
   <div class="card-body p-0">
     <table class="table table-sm table-hover mb-0">
@@ -91,14 +92,16 @@ var body = `
       <tbody>
         ${recentWorkouts.map(w => `
         <tr>
-          <td><a href="/admin/workouts/${w.id}" class="text-decoration-none">${w.name || '—'}</a></td>
-          <td><span class="badge bg-secondary">${w.workoutType}</span></td>
-          <td>${w.durationMinutes ? w.durationMinutes + ' min' : '—'}</td>
-          <td class="text-muted small">${new Date(w.startTime).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
+          <td>${readOnly ? '<span class="text-muted">Seance masquee</span>' : `<a href="/admin/workouts/${w.id}" class="text-decoration-none">${w.name || '—'}</a>`}</td>
+          <td>${readOnly ? '<span class="badge bg-secondary">Masque</span>' : `<span class="badge bg-secondary">${w.workoutType}</span>`}</td>
+          <td>${readOnly ? 'Masque' : (w.durationMinutes ? w.durationMinutes + ' min' : '—')}</td>
+          <td class="text-muted small">${readOnly ? 'Masque' : new Date(w.startTime).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
           <td>
+            ${readOnly ? '<span class="text-muted small">Lecture seule</span>' : `
             <form method="POST" action="/admin/workouts/${w.id}/delete" onsubmit="return confirm('Supprimer cette séance ?')" style="display:inline">
               <button class="btn btn-sm btn-outline-danger">Supprimer</button>
             </form>
+            `}
           </td>
         </tr>`).join('')}
         ${recentWorkouts.length === 0 ? '<tr><td colspan="5" class="text-muted text-center py-3">Aucune séance</td></tr>' : ''}
@@ -118,11 +121,11 @@ var body = `
       <tbody>
         ${recentRuns.map(r => `
         <tr>
-          <td><a href="/admin/running/${r.id}" style="text-decoration: none; color: inherit;">${r.distanceKm ? r.distanceKm.toFixed(2) + ' km' : '—'}</a></td>
-          <td>${r.durationSeconds ? Math.floor(r.durationSeconds / 60) + ' min' : '—'}</td>
-          <td class="text-muted small">${new Date(r.startTime).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
+          <td>${readOnly ? '<span class="text-muted">Course masquee</span>' : `<a href="/admin/running/${r.id}" style="text-decoration: none; color: inherit;">${r.distanceKm ? r.distanceKm.toFixed(2) + ' km' : '—'}</a>`}</td>
+          <td>${readOnly ? 'Masque' : (r.durationSeconds ? Math.floor(r.durationSeconds / 60) + ' min' : '—')}</td>
+          <td class="text-muted small">${readOnly ? 'Masque' : new Date(r.startTime).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
           <td>
-            <a href="/admin/running/${r.id}" class="btn btn-sm btn-outline-primary">Voir</a>
+            ${readOnly ? '<span class="text-muted small">Lecture seule</span>' : `<a href="/admin/running/${r.id}" class="btn btn-sm btn-outline-primary">Voir</a>`}
           </td>
         </tr>`).join('')}
         ${recentRuns.length === 0 ? '<tr><td colspan="4" class="text-muted text-center py-3">Aucune course</td></tr>' : ''}
@@ -131,16 +134,25 @@ var body = `
   </div>
 </div>
 
+${readOnly ? '<div class="alert alert-info mt-3 mb-0">Compte visiteur: consultation uniquement.</div>' : `
 <div class="mt-3 d-flex gap-2">
   <form method="POST" action="/admin/users/${user.id}/ban">
     <button class="btn ${user.isBanned ? 'btn-success' : 'btn-warning'}" type="submit">
       ${user.isBanned ? '✅ Débannir' : '🚫 Bannir'}
     </button>
   </form>
-  <form method="POST" action="/admin/users/${user.id}/delete" onsubmit="return confirm('Supprimer définitivement ce compte et toutes ses données ?')">
-    <button class="btn btn-danger" type="submit">🗑️ Supprimer le compte</button>
+  ${user.isDisabled ? `
+  <form method="POST" action="/admin/users/${user.id}/reactivate" onsubmit="return confirm('Reactiver ce compte ?')">
+    <button class="btn btn-success" type="submit">Reactiver le compte</button>
+  </form>` : `
+  <form method="POST" action="/admin/users/${user.id}/disable" onsubmit="return confirm('Desactiver temporairement ce compte ?')">
+    <button class="btn btn-secondary" type="submit">Desactiver le compte</button>
+  </form>`}
+  <form method="POST" action="/admin/users/${user.id}/delete" onsubmit="return confirm('Desactiver ce compte et planifier sa suppression definitive ?')">
+    <button class="btn btn-danger" type="submit">Supprimer/anonymiser</button>
   </form>
 </div>
+`}
 `;
 %>
 <%- include('layout', { page, title, body, admin }) %>

@@ -3,118 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Suppression des données — FitnessPro</title>
+  <title>Suppression des donnees - FitnessPro</title>
   <%- include('partials/legal-head') %>
-  <style>
-    .steps { counter-reset: step; list-style: none; padding: 0; }
-    .steps li { counter-increment: step; display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1.25rem; }
-    .steps li::before { content: counter(step); display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; min-width: 2rem; background: rgba(59,130,246,.15); border: 1px solid rgba(59,130,246,.3); border-radius: 50%; color: #3b82f6; font-size: .8rem; font-weight: 700; }
-    .steps li .step-content { padding-top: .3rem; }
-    .steps li .step-content strong { color: #e2e8f0; display: block; margin-bottom: .2rem; }
-    .steps li .step-content span { color: #94a3b8; font-size: .9rem; }
-    .warning-box { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); border-radius: 10px; padding: 1.25rem 1.5rem; margin-top: 1.25rem; }
-    .warning-box p { color: #fca5a5; margin: 0; font-size: .9rem; }
-    .warning-box p strong { color: #f87171; }
-    .info-box { background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.2); border-radius: 10px; padding: 1.25rem 1.5rem; margin-top: 1.25rem; }
-    .info-box p { color: #93c5fd; margin: 0; font-size: .9rem; }
-  </style>
 </head>
 <body>
-
-<nav>
-  <a href="/" class="nav-brand"><span>Fitness</span>Pro</a>
-  <div class="nav-links">
-    <a href="/privacy">Confidentialité</a>
-    <a href="/terms">CGU</a>
-    <a href="/data-deletion">Suppression</a>
-  </div>
-</nav>
-
-<div class="page-wrap">
-  <div class="page-header">
-    <div class="tag">Vos droits</div>
-    <h1>Suppression des données</h1>
-    <div class="updated">Dernière mise à jour : 28 mars 2026</div>
-  </div>
-
-  <p style="color:#94a3b8; font-size:.925rem; line-height:1.75;">
-    Conformément au RGPD et aux exigences des plateformes OAuth (Google, Facebook, GitHub), vous avez le droit de demander la suppression complète de vos données personnelles à tout moment.
-  </p>
-
-  <div class="section-block">
-    <h2>Données supprimées</h2>
-    <p>Lors de la suppression de votre compte, les données suivantes sont définitivement effacées :</p>
-    <ul>
-      <li>Profil utilisateur (nom, email, photo)</li>
-      <li>Toutes les séances d'entraînement et sessions de course (incluant les points GPS)</li>
-      <li>Historique des pas, du poids et des mesures corporelles</li>
-      <li>Données de nutrition, hydratation et sommeil</li>
-      <li>Messages et conversations</li>
-      <li>Badges et records personnels</li>
-      <li>Paramètres et préférences</li>
-      <li>Tokens de connexion OAuth (Google, GitHub, Facebook)</li>
-    </ul>
-    <div class="warning-box">
-      <p><strong>Suppression irréversible.</strong> Une fois votre compte supprimé, vos données ne peuvent pas être récupérées. Cette action est définitive.</p>
+  <nav class="legal-nav">
+    <div class="legal-nav-inner">
+      <a href="/" class="brand"><img src="/app_icon.svg" alt="" width="38" height="38"><span>FitnessPro</span></a>
+      <div class="legal-links">
+        <a href="/privacy">Confidentialite</a>
+        <a href="/terms">CGU</a>
+        <a href="/data-deletion">Suppression</a>
+      </div>
     </div>
-  </div>
+  </nav>
 
-  <div class="section-block">
-    <h2>Comment supprimer votre compte</h2>
-    <ul class="steps">
-      <li>
-        <div class="step-content">
-          <strong>Ouvrez l'application FitnessPro</strong>
-          <span>Connectez-vous à votre compte si ce n'est pas déjà fait.</span>
-        </div>
-      </li>
-      <li>
-        <div class="step-content">
-          <strong>Accédez aux Paramètres</strong>
-          <span>Appuyez sur l'icône de profil puis « Paramètres ».</span>
-        </div>
-      </li>
-      <li>
-        <div class="step-content">
-          <strong>Section « Compte »</strong>
-          <span>Faites défiler jusqu'en bas et sélectionnez « Supprimer mon compte ».</span>
-        </div>
-      </li>
-      <li>
-        <div class="step-content">
-          <strong>Confirmez la suppression</strong>
-          <span>Une confirmation vous sera demandée. Validez pour supprimer définitivement votre compte.</span>
-        </div>
-      </li>
-    </ul>
-  </div>
+  <main class="legal-shell">
+    <aside class="legal-aside">
+      <div class="legal-aside-title">Documents</div>
+      <a href="/privacy">Politique de confidentialite</a>
+      <a href="/terms">Conditions d'utilisation</a>
+      <a href="/data-deletion">Suppression des donnees</a>
+      <a href="/">Retour a l'accueil</a>
+    </aside>
 
-  <div class="section-block">
-    <h2>Délai de suppression</h2>
-    <div class="info-box">
-      <p>La suppression est effective <strong>immédiatement</strong> pour l'accès au compte. L'effacement complet des données dans nos systèmes est réalisé dans un délai maximum de <strong>30 jours</strong>.</p>
+    <article class="legal-page">
+      <header class="legal-hero">
+        <div class="tag">Vos droits</div>
+        <h1>Suppression des donnees</h1>
+        <div class="updated">Derniere mise a jour : 28 mars 2026</div>
+      </header>
+
+      <div class="legal-content">
+        <p class="intro">Conformement au RGPD et aux exigences des plateformes OAuth, vous pouvez demander la suppression complete de vos donnees personnelles a tout moment.</p>
+
+        <section class="section-block">
+          <h2>Donnees supprimees</h2>
+          <p>Lors de la suppression de votre compte, les donnees suivantes sont effacees :</p>
+          <ul>
+            <li>Profil utilisateur : nom, email et photo.</li>
+            <li>Seances d'entrainement, courses et points GPS.</li>
+            <li>Historique des pas, du poids et des mesures corporelles.</li>
+            <li>Nutrition, hydratation, sommeil, badges et records.</li>
+            <li>Messages, conversations, parametres et tokens OAuth.</li>
+          </ul>
+          <div class="warning-box">
+            <p><strong>Suppression irreversible.</strong> Une fois le compte supprime, les donnees ne peuvent pas etre recuperees.</p>
+          </div>
+        </section>
+
+        <section class="section-block">
+          <h2>Comment supprimer votre compte</h2>
+          <ul class="steps">
+            <li><div class="step-content"><strong>Ouvrez FitnessPro</strong><span>Connectez-vous a votre compte.</span></div></li>
+            <li><div class="step-content"><strong>Accedez aux parametres</strong><span>Ouvrez le profil puis les parametres du compte.</span></div></li>
+            <li><div class="step-content"><strong>Choisissez Supprimer mon compte</strong><span>La section compte contient l'action de suppression.</span></div></li>
+            <li><div class="step-content"><strong>Confirmez</strong><span>Validez la confirmation pour lancer la suppression definitive.</span></div></li>
+          </ul>
+        </section>
+
+        <section class="section-block">
+          <h2>Delai de suppression</h2>
+          <div class="info-box">
+            <p>La suppression bloque immediatement l'acces au compte. L'effacement complet des donnees dans nos systemes est realise dans un delai maximum de 30 jours.</p>
+          </div>
+        </section>
+
+        <section class="section-block">
+          <h2>Deconnexion des comptes sociaux</h2>
+          <p>Si vous utilisez Google, GitHub ou Facebook, vous pouvez aussi revoquer FitnessPro depuis les parametres de securite du fournisseur concerne.</p>
+          <ul>
+            <li><strong>Google :</strong> myaccount.google.com, section securite.</li>
+            <li><strong>Facebook :</strong> parametres, applications et sites web.</li>
+            <li><strong>GitHub :</strong> settings, applications, authorized OAuth apps.</li>
+          </ul>
+        </section>
+      </div>
+    </article>
+  </main>
+
+  <footer class="legal-footer">
+    <div class="legal-footer-inner">
+      <a href="/" class="brand"><img src="/app_icon.svg" alt="" width="38" height="38"><span>FitnessPro</span></a>
+      <div class="legal-footer-links">
+        <a href="/">Accueil</a>
+        <a href="/privacy">Politique de confidentialite</a>
+        <a href="/terms">Conditions d'utilisation</a>
+      </div>
     </div>
-  </div>
-
-  <div class="section-block">
-    <h2>Déconnexion de votre compte social</h2>
-    <p>Si vous vous êtes connecté via Google, GitHub ou Facebook, pensez également à révoquer l'accès accordé à FitnessPro depuis les paramètres de sécurité de votre compte social :</p>
-    <ul>
-      <li><strong>Google :</strong> myaccount.google.com → Sécurité → Applications tierces</li>
-      <li><strong>Facebook :</strong> Paramètres → Sécurité → Applications et sites web</li>
-      <li><strong>GitHub :</strong> Settings → Applications → Authorized OAuth Apps</li>
-    </ul>
-  </div>
-</div>
-
-<footer>
-  <div>
-    <a href="/">Accueil</a>
-    <a href="/privacy">Politique de confidentialité</a>
-    <a href="/terms">Conditions d'utilisation</a>
-  </div>
-  <p>© 2026 FitnessPro. Tous droits réservés.</p>
-</footer>
-
+    <p class="legal-copy">© 2026 FitnessPro. Tous droits reserves.</p>
+  </footer>
 </body>
 </html>

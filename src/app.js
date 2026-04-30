@@ -73,10 +73,35 @@ app.use(session({
 app.use(passport.initialize());
 
 // ── Swagger/OpenAPI documentation (admin only) ───────────────────
-const { swaggerUi, swaggerDoc } = require('./swagger');
+const { swaggerUi, getSwaggerDocForRole, getSwaggerUiOptions } = require('./swagger');
 const requireAdmin = require('./middleware/requireAdmin');
 app.use('/api-docs', requireAdmin, swaggerUi.serve);
-app.get('/api-docs', requireAdmin, swaggerUi.setup(swaggerDoc));
+app.get('/api-docs', requireAdmin, (req, res, next) => {
+  return swaggerUi.setup(
+    getSwaggerDocForRole(req.adminRole),
+    getSwaggerUiOptions(req.adminRole),
+  )(req, res, next);
+});
+
+app.get('/guide-visiteur', requireAdmin, (req, res) => {
+  res.json({
+    title: 'Guide visiteur Swagger',
+    role: req.adminRole,
+    steps: [
+      'Connecte-toi au panel admin avec le compte visiteur.',
+      'Ouvre /api-docs.',
+      'Pour tester une route protegee, utilise POST /auth/login avec un compte mobile de test.',
+      'Copie accessToken, clique sur Authorize, puis colle Bearer TON_ACCESS_TOKEN.',
+      'Evite les routes POST/PATCH/DELETE en production si tu veux seulement observer.',
+    ],
+    protectedData: [
+      'Emails masques dans le panel visiteur.',
+      'Details de seances et courses reserves aux administrateurs complets.',
+      'Coordonnees GPS et JSON complets non exposes au visiteur.',
+    ],
+    productionServer: 'https://fitnesssapi.onrender.com',
+  });
+});
 
 // ── Routes API ────────────────────────────────────────────────────
 app.use('/ping',     require('./routes/ping'));

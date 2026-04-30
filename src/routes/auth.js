@@ -74,6 +74,9 @@ router.post('/login', async (req, res) => {
     if (!match) {
       return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Email ou mot de passe incorrect' });
     }
+    if (user.isDisabled || user.isSystem) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Compte desactive' });
+    }
     if (user.isBanned) {
       return res.status(403).json({ error: 'FORBIDDEN', message: 'Compte suspendu' });
     }
@@ -102,6 +105,10 @@ router.post('/refresh', async (req, res) => {
   if (!stored || stored.expiresAt < new Date()) {
     if (stored) await prisma.refreshToken.delete({ where: { id: stored.id } });
     return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Refresh token invalide ou expiré' });
+  }
+  if (stored.user.isDisabled || stored.user.isSystem || stored.user.isBanned) {
+    await prisma.refreshToken.deleteMany({ where: { userId: stored.userId } });
+    return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Compte inactif' });
   }
 
   const accessToken = issueAccessToken(stored.user);
