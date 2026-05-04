@@ -1,0 +1,413 @@
+<%
+  var page = 'dashboard';
+  var title = 'Dossier visiteur';
+
+  function number(value) {
+    return Number(value || 0).toLocaleString('fr-FR');
+  }
+
+  var modules = [
+    ['bi-person-check', 'Authentification et profil', 'Creation de compte, connexion email/mot de passe, OAuth, objectifs personnels, photo de profil et onboarding.'],
+    ['bi-activity', 'Entrainements et programmes', 'Creation de seances de musculation, exercices, series, charges, brouillons de session et programmes personnalises.'],
+    ['bi-stopwatch', 'Course et GPS', 'Enregistrement des courses avec distance, duree, vitesse, calories et points GPS pour reconstruire le trajet.'],
+    ['bi-graph-up', 'Suivi de progression', 'Historique des pas, poids, badges, records personnels et indicateurs de regularite.'],
+    ['bi-people', 'Fonctions sociales', 'Recherche d amis, demandes, conversations et partage de seances ou courses dans la messagerie.'],
+    ['bi-phone', 'Administration', 'Gestion des versions mobiles, mode maintenance, statistiques, rapports d erreur et documentation Swagger.'],
+  ];
+
+  var architecture = [
+    ['Mobile Flutter', 'Interface utilisateur de l application: inscription, suivi sportif, historique, social et synchronisation.'],
+    ['API Node.js / Express', 'Expose les routes REST, applique les validations, gere l authentification et centralise les regles metier.'],
+    ['Base PostgreSQL / Prisma', 'Stocke les utilisateurs, seances, courses, pas, badges, messages, programmes et logs.'],
+    ['Cloudflare R2', 'Stocke les photos de profil custom sans faire transiter les fichiers par le serveur applicatif.'],
+    ['Panel admin EJS', 'Permet le suivi operationnel, la consultation des donnees utiles et le compte visiteur en lecture seule.'],
+  ];
+
+  var dataFamilies = [
+    ['Compte', 'email, nom, niveau sportif, objectifs, photo de profil'],
+    ['Sport', 'seances, exercices, series, courses, points GPS, pas, poids'],
+    ['Social', 'amis, conversations, messages et partages sportifs'],
+    ['Technique', 'versions app, tokens, erreurs, logs de securite et audit'],
+  ];
+
+  var protections = [
+    ['bi-key', 'Mots de passe renforces', 'Inscription avec 12 caracteres minimum, majuscule, minuscule, chiffre et caractere special, puis hachage bcrypt.'],
+    ['bi-shield-lock', 'Authentification limitee', 'JWT courts, refresh tokens stockes en base, logout possible et blocage des comptes suspendus ou desactives.'],
+    ['bi-lock', 'Chiffrement des messages', 'Les messages applicatifs sont chiffres avec AES-256-GCM quand la cle applicative est configuree.'],
+    ['bi-eye-slash', 'Compte visiteur en lecture seule', 'Les emails sont masques, les actions POST/PATCH/DELETE sont bloquees et les journaux sensibles sont reserves aux admins.'],
+    ['bi-clock-history', 'Journalisation', 'Tentatives admin, erreurs API, actions d audit et rapports d erreur sont journalises pour diagnostiquer et securiser.'],
+    ['bi-trash3', 'Suppression programmee', 'La suppression de compte desactive le profil, retire les secrets et planifie l effacement definitif selon la politique de retention.'],
+  ];
+
+  var cnilReasons = [
+    'La CNIL recommande de raisonner en entropie, c est-a-dire la difficulte theorique a deviner un mot de passe.',
+    'Pour un mot de passe seul, un exemple robuste est 12 caracteres avec majuscules, minuscules, chiffres et caracteres speciaux.',
+    'La limitation des tentatives et la journalisation reduisent le risque d attaques en ligne sur les comptes.',
+    'La minimisation impose de ne montrer au visiteur que ce qui est utile a la demonstration: emails masques et actions bloquees.',
+  ];
+
+  var metricItems = [
+    ['Utilisateurs', stats.users, 'bi-people'],
+    ['Seances', stats.workouts, 'bi-activity'],
+    ['Courses', stats.runs, 'bi-stopwatch'],
+    ['Pas suivis', stats.totalSteps, 'bi-graph-up'],
+    ['Badges', stats.badges, 'bi-trophy'],
+    ['Conversations', stats.conversations, 'bi-chat-dots'],
+  ];
+
+  var body = `
+<style>
+  .visitor-hero {
+    background:
+      linear-gradient(120deg, rgba(15, 23, 42, 0.94), rgba(20, 83, 45, 0.82)),
+      url('/image/entrainementA.png') center/cover;
+    color: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    min-height: 330px;
+    display: flex;
+    align-items: flex-end;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .visitor-hero h2 {
+    font-size: 2.35rem;
+    line-height: 1.08;
+    font-weight: 850;
+    letter-spacing: 0;
+  }
+
+  .visitor-kicker {
+    color: #bbf7d0;
+    font-size: 0.76rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .visitor-band {
+    background: #ffffff;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  }
+
+  .visitor-section-title {
+    font-size: 1.04rem;
+    font-weight: 850;
+    letter-spacing: 0;
+  }
+
+  .visitor-module,
+  .visitor-protection,
+  .visitor-doc-card {
+    height: 100%;
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+    padding: 1rem;
+    background: #fff;
+  }
+
+  .visitor-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: #2563eb;
+    flex: 0 0 auto;
+  }
+
+  .visitor-protection .visitor-icon {
+    background: #15803d;
+  }
+
+  .visitor-doc-card .visitor-icon {
+    background: #7c2d12;
+  }
+
+  .visitor-metric {
+    border-left: 4px solid #2563eb;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 0.95rem;
+    min-height: 92px;
+  }
+
+  .visitor-metric-value {
+    font-size: 1.45rem;
+    font-weight: 850;
+    line-height: 1.1;
+  }
+
+  .visitor-flow {
+    counter-reset: step;
+  }
+
+  .visitor-flow-item {
+    position: relative;
+    padding-left: 3rem;
+    padding-bottom: 1rem;
+  }
+
+  .visitor-flow-item:before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 850;
+  }
+
+  .visitor-flow-item:not(:last-child):after {
+    content: "";
+    position: absolute;
+    left: 16px;
+    top: 38px;
+    bottom: 0;
+    width: 2px;
+    background: #dce3ea;
+  }
+
+  .visitor-note {
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    color: #14532d;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .visitor-toc {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .visitor-toc a {
+    text-decoration: none;
+    border: 1px solid #dce3ea;
+    color: #334155;
+    background: #fff;
+    border-radius: 8px;
+    padding: 0.5rem 0.72rem;
+    font-size: 0.86rem;
+    font-weight: 750;
+  }
+
+  .visitor-toc a:hover {
+    border-color: #2563eb;
+    color: #1d4ed8;
+  }
+
+  .visitor-two-col-list {
+    columns: 2;
+    column-gap: 2rem;
+  }
+
+  @media (max-width: 767.98px) {
+    .visitor-hero h2 { font-size: 1.8rem; }
+    .visitor-two-col-list { columns: 1; }
+  }
+</style>
+
+<div class="visitor-hero mb-4">
+  <div class="col-lg-8">
+    <div class="visitor-kicker mb-2">Dossier de presentation pour evaluation</div>
+    <h2 class="mb-3">FitnessPro: application mobile de suivi sportif avec API, admin et securite</h2>
+    <p class="mb-3 text-white-50">Cette page sert de documentation rapide pour comprendre le projet sans avoir besoin de modifier les donnees. Elle presente le besoin, les fonctionnalites, l architecture, les donnees traitees, les choix de securite et les points que le compte visiteur permet de verifier.</p>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="/api-docs" target="_blank" class="btn btn-light"><i class="bi bi-book me-2"></i>Voir Swagger</a>
+      <a href="/admin/stats" class="btn btn-outline-light"><i class="bi bi-bar-chart me-2"></i>Voir les statistiques</a>
+    </div>
+  </div>
+</div>
+
+<div class="visitor-band mb-4">
+  <div class="visitor-section-title mb-3">Sommaire</div>
+  <div class="visitor-toc">
+    <a href="#objectif">Objectif</a>
+    <a href="#fonctionnalites">Fonctionnalites</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#donnees">Donnees</a>
+    <a href="#securite">Securite</a>
+    <a href="#cnil">CNIL / RGPD</a>
+    <a href="#visiteur">Compte visiteur</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  ${metricItems.map(([label, value, icon]) => `
+  <div class="col-xl-2 col-md-4 col-6">
+    <div class="visitor-metric">
+      <div class="d-flex align-items-center gap-2 text-muted small fw-bold mb-2"><i class="bi ${icon}"></i>${label}</div>
+      <div class="visitor-metric-value">${number(value)}</div>
+    </div>
+  </div>`).join('')}
+</div>
+
+<div id="objectif" class="visitor-band mb-4">
+  <div class="row g-4 align-items-start">
+    <div class="col-lg-7">
+      <div class="visitor-section-title mb-2">Objectif du projet</div>
+      <p class="mb-2">FitnessPro est une application de suivi sportif construite autour d une API REST. L objectif est de permettre a un utilisateur de centraliser son activite physique: entrainements, courses, pas, poids, progression, badges et interactions sociales.</p>
+      <p class="mb-0 text-muted">Le projet montre aussi une partie backend complete: authentification, base de donnees relationnelle, documentation Swagger, panel admin, gestion des erreurs, logs de securite, suppression de compte et stockage externe des photos de profil.</p>
+    </div>
+    <div class="col-lg-5">
+      <div class="visitor-note">
+        <strong>Pour l evaluation:</strong> le compte visiteur donne une lecture du fonctionnement general, mais bloque volontairement les actions sensibles afin de proteger les donnees et d eviter les modifications accidentelles.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="fonctionnalites" class="visitor-band mb-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <div class="visitor-section-title">Fonctionnalites principales</div>
+      <div class="text-muted small">Les grands modules visibles cote mobile et cote API.</div>
+    </div>
+    <a href="/api-docs" target="_blank" class="btn btn-outline-primary"><i class="bi bi-book me-2"></i>Swagger</a>
+  </div>
+  <div class="row g-3">
+    ${modules.map(([icon, title, text]) => `
+    <div class="col-xl-4 col-md-6">
+      <div class="visitor-module">
+        <div class="d-flex gap-3">
+          <span class="visitor-icon"><i class="bi ${icon}"></i></span>
+          <div>
+            <div class="fw-bold mb-1">${title}</div>
+            <div class="text-muted small">${text}</div>
+          </div>
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>
+</div>
+
+<div id="architecture" class="visitor-band mb-4">
+  <div class="visitor-section-title mb-3">Architecture technique</div>
+  <div class="row g-3">
+    ${architecture.map(([title, text], index) => `
+    <div class="col-lg col-md-6">
+      <div class="visitor-doc-card">
+        <div class="d-flex gap-3">
+          <span class="visitor-icon">${index + 1}</span>
+          <div>
+            <div class="fw-bold mb-1">${title}</div>
+            <div class="text-muted small">${text}</div>
+          </div>
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-5">
+    <div class="visitor-band h-100">
+      <div class="visitor-section-title mb-3">Cycle principal</div>
+      <div class="visitor-flow">
+        <div class="visitor-flow-item">
+          <div class="fw-bold">Creation du compte</div>
+          <div class="text-muted small">Email, mot de passe robuste, profil et objectifs initiaux.</div>
+        </div>
+        <div class="visitor-flow-item">
+          <div class="fw-bold">Suivi sportif</div>
+          <div class="text-muted small">Entrainements, courses GPS, pas, poids et progression sont enregistres par l utilisateur.</div>
+        </div>
+        <div class="visitor-flow-item">
+          <div class="fw-bold">Synchronisation mobile</div>
+          <div class="text-muted small">L API renvoie les donnees au format attendu par l app Flutter.</div>
+        </div>
+        <div class="visitor-flow-item">
+          <div class="fw-bold">Moderation et support</div>
+          <div class="text-muted small">Les admins complets peuvent diagnostiquer, bloquer un compte ou traiter un rapport d erreur.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div id="securite" class="visitor-band h-100">
+      <div class="visitor-section-title mb-3">Securite mise en place</div>
+      <div class="row g-3">
+        ${protections.map(([icon, title, text]) => `
+        <div class="col-md-6">
+          <div class="visitor-protection">
+            <div class="d-flex gap-3">
+              <span class="visitor-icon"><i class="bi ${icon}"></i></span>
+              <div>
+                <div class="fw-bold mb-1">${title}</div>
+                <div class="text-muted small">${text}</div>
+              </div>
+            </div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div id="cnil" class="visitor-band h-100">
+      <div class="visitor-section-title mb-3">Pourquoi la nouvelle politique de mots de passe</div>
+      <div class="visitor-note mb-3">
+        FitnessPro manipule des donnees personnelles et des donnees de suivi sportif. Le mot de passe doit donc limiter le risque d usurpation de compte, surtout avant ajout eventuel d une authentification forte.
+      </div>
+      <ul class="mb-0">
+        ${cnilReasons.map(reason => `<li class="mb-2">${reason}</li>`).join('')}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div id="visiteur" class="visitor-band h-100">
+      <div class="visitor-section-title mb-3">Limites du compte visiteur</div>
+      <div class="d-grid gap-2">
+        <a href="/admin/users" class="btn btn-outline-secondary text-start py-3"><i class="bi bi-people me-2"></i>Consulter les utilisateurs masques</a>
+        <a href="/admin/stats" class="btn btn-outline-secondary text-start py-3"><i class="bi bi-bar-chart me-2"></i>Voir les statistiques globales</a>
+        <a href="/guide-visiteur" class="btn btn-outline-secondary text-start py-3"><i class="bi bi-compass me-2"></i>Lire le guide visiteur API</a>
+      </div>
+      <div class="alert alert-info mt-3 mb-0 small">
+        Les actions d ecriture sont bloquees: pas de suppression, pas de ban, pas de creation manuelle, pas d acces aux logs sensibles.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="donnees" class="visitor-band mb-4">
+  <div class="visitor-section-title mb-3">Donnees traitees et logique de protection</div>
+  <div class="row g-3">
+    ${dataFamilies.map(([title, text]) => `
+    <div class="col-md-6 col-xl-3">
+      <div class="visitor-doc-card">
+        <div class="fw-bold mb-1">${title}</div>
+        <div class="text-muted small">${text}</div>
+      </div>
+    </div>`).join('')}
+  </div>
+  <hr>
+  <ul class="visitor-two-col-list mb-0">
+    <li>Les emails sont masques dans la session visiteur.</li>
+    <li>Les mots de passe ne sont jamais stockes en clair.</li>
+    <li>Les photos de profil sont stockees dans Cloudflare R2.</li>
+    <li>Les messages peuvent etre chiffres avec AES-256-GCM.</li>
+    <li>Les suppressions de compte retirent les secrets et planifient l effacement.</li>
+    <li>Les operations admin sensibles demandent un compte administrateur complet.</li>
+  </ul>
+</div>
+`;
+%>
+<%- include('layout', { page, title, body, admin }) %>

@@ -5,19 +5,49 @@ const { encryptMessageBody, decryptMessage } = require('../lib/messageCrypto');
 
 router.use(requireAuth);
 
-// Helper : vérifie que l'utilisateur est bien participant de la conversation
 async function assertParticipant(conversationId, userId, res) {
   const participant = await prisma.conversationParticipant.findUnique({
     where: { conversationId_userId: { conversationId, userId } },
   });
   if (!participant) {
-    res.status(403).json({ error: 'FORBIDDEN', message: 'Accès refusé à cette conversation' });
+    res.status(403).json({ error: 'FORBIDDEN', message: 'Acces refuse a cette conversation' });
     return false;
   }
   return true;
 }
 
-// GET /conversations — liste des conversations de l'utilisateur
+function isConversationVisibleForUser(conversation, userId) {
+  const me = conversation.participants.find(p => p.userId === userId);
+  return !me?.hiddenAt || conversation.updatedAt > me.hiddenAt;
+}
+
+async function assertOwnsSharedResources({ userId, workoutId, runningId }, res) {
+  if (workoutId) {
+    const workout = await prisma.workout.findFirst({
+      where: { id: workoutId, userId },
+      select: { id: true },
+    });
+    if (!workout) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Seance a partager introuvable' });
+      return false;
+    }
+  }
+
+  if (runningId) {
+    const running = await prisma.runningSession.findFirst({
+      where: { id: runningId, userId },
+      select: { id: true },
+    });
+    if (!running) {
+      res.status(404).json({ error: 'NOT_FOUND', message: 'Course a partager introuvable' });
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// GET /conversations - liste des conversations visibles de l'utilisateur.
 router.get('/', async (req, res) => {
   const conversations = await prisma.conversation.findMany({
     where: { participants: { some: { userId: req.userId } } },
@@ -34,7 +64,9 @@ router.get('/', async (req, res) => {
     },
   });
 
-  const result = await Promise.all(conversations.map(async (conv) => {
+  const visibleConversations = conversations.filter(conv => isConversationVisibleForUser(conv, req.userId));
+
+  const result = await Promise.all(visibleConversations.map(async (conv) => {
     const me = conv.participants.find(p => p.userId === req.userId);
     const unreadCount = await prisma.message.count({
       where: {
@@ -55,13 +87,14 @@ router.get('/', async (req, res) => {
   res.json(result);
 });
 
-// POST /conversations — créer ou récupérer un DM avec un autre user
+// POST /conversations - creer ou recuperer un DM avec un autre user.
 router.post('/', async (req, res) => {
   const { userId: otherId } = req.body;
   if (!otherId) return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'userId requis' });
-  if (otherId === req.userId) return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Impossible de créer une conversation avec soi-même' });
+  if (otherId === req.userId) {
+    return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Impossible de creer une conversation avec soi-meme' });
+  }
 
-  // Cherche une conversation existante entre les deux
   const existing = await prisma.conversation.findFirst({
     where: {
       AND: [
@@ -73,10 +106,13 @@ router.post('/', async (req, res) => {
   });
 
   if (existing && existing.participants.length === 2) {
+    await prisma.conversationParticipant.update({
+      where: { conversationId_userId: { conversationId: existing.id, userId: req.userId } },
+      data: { hiddenAt: null },
+    });
     return res.json({ id: existing.id });
   }
 
-  // Vérifie que l'autre user existe
   const other = await prisma.user.findFirst({
     where: { id: otherId, isDisabled: false, isSystem: false },
     select: { id: true },
@@ -94,7 +130,7 @@ router.post('/', async (req, res) => {
   res.status(201).json({ id: conv.id });
 });
 
-// GET /conversations/:id/messages — messages paginés (cursor-based)
+// GET /conversations/:id/messages - messages pagines, historique complet.
 router.get('/:id/messages', async (req, res) => {
   const { id } = req.params;
   if (!await assertParticipant(id, req.userId, res)) return;
@@ -118,7 +154,7 @@ router.get('/:id/messages', async (req, res) => {
   res.json({ messages: messages.reverse().map(decryptMessage), nextCursor });
 });
 
-// POST /conversations/:id/messages — envoyer un message
+// POST /conversations/:id/messages - envoyer un message et reactiver la conversation.
 router.post('/:id/messages', async (req, res) => {
   const { id } = req.params;
   if (!await assertParticipant(id, req.userId, res)) return;
@@ -127,29 +163,60 @@ router.post('/:id/messages', async (req, res) => {
   if (!body && !workoutId && !runningId) {
     return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'body, workoutId ou runningId requis' });
   }
+  if (!await assertOwnsSharedResources({ userId: req.userId, workoutId, runningId }, res)) return;
 
-  const message = await prisma.message.create({
-    data: {
-      conversationId: id,
-      senderId: req.userId,
-      body: body ? encryptMessageBody(body) : null,
-      workoutId: workoutId || null,
-      runningId: runningId || null,
-    },
-    include: {
-      sender: { select: { id: true, name: true, profileImageUrl: true } },
-      workout: { select: { id: true, name: true, durationMinutes: true, caloriesBurned: true } },
-      running: { select: { id: true, distanceKm: true, durationSeconds: true, caloriesBurned: true } },
-    },
+  const now = new Date();
+  const message = await prisma.$transaction(async (tx) => {
+    const created = await tx.message.create({
+      data: {
+        conversationId: id,
+        senderId: req.userId,
+        body: body ? encryptMessageBody(body) : null,
+        workoutId: workoutId || null,
+        runningId: runningId || null,
+      },
+      include: {
+        sender: { select: { id: true, name: true, profileImageUrl: true } },
+        workout: { select: { id: true, name: true, durationMinutes: true, caloriesBurned: true } },
+        running: { select: { id: true, distanceKm: true, durationSeconds: true, caloriesBurned: true } },
+      },
+    });
+
+    await tx.conversationParticipant.updateMany({
+      where: { conversationId: id },
+      data: { hiddenAt: null },
+    });
+
+    await tx.conversation.update({ where: { id }, data: { updatedAt: now } });
+
+    return created;
   });
-
-  // Met à jour updatedAt de la conversation
-  await prisma.conversation.update({ where: { id }, data: { updatedAt: new Date() } });
 
   res.status(201).json(decryptMessage(message));
 });
 
-// POST /conversations/:id/read — marquer comme lu
+// DELETE /conversations/:id - masquer la conversation pour l'utilisateur courant.
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  if (!await assertParticipant(id, req.userId, res)) return;
+
+  const now = new Date();
+  await prisma.conversationParticipant.update({
+    where: { conversationId_userId: { conversationId: id, userId: req.userId } },
+    data: {
+      hiddenAt: now,
+      lastReadAt: now,
+    },
+  });
+
+  res.json({
+    ok: true,
+    hidden: true,
+    message: 'Conversation masquee pour cet utilisateur uniquement',
+  });
+});
+
+// POST /conversations/:id/read - marquer comme lu.
 router.post('/:id/read', async (req, res) => {
   const { id } = req.params;
   if (!await assertParticipant(id, req.userId, res)) return;

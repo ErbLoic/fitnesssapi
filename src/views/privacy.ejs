@@ -90,9 +90,14 @@
           <h2>7. Securite</h2>
           <ul>
             <li>Mots de passe haches avec bcrypt.</li>
+            <li>Politique de mot de passe renforcee a l'inscription : 12 caracteres minimum avec majuscule, minuscule, chiffre et caractere special.</li>
             <li>Communications chiffrees via HTTPS.</li>
             <li>Tokens JWT a duree limitee.</li>
+            <li>Limitation des tentatives d'authentification admin, journalisation des erreurs API et masquage des donnees dans le compte visiteur.</li>
           </ul>
+          <div class="notice">
+            <p>Cette politique s'appuie sur les recommandations de la CNIL relatives a l'authentification par mot de passe : augmenter la longueur et la complexite limite le risque de devinabilite et d'attaque par force brute.</p>
+          </div>
         </section>
 
         <section class="section-block">

@@ -74,8 +74,9 @@ components:
           example: user@example.com
         password:
           type: string
-          minLength: 6
-          example: password123
+          minLength: 12
+          description: Minimum 12 caracteres avec majuscule, minuscule, chiffre et caractere special.
+          example: Motdepasse123!
         name:
           type: string
           minLength: 1
@@ -119,7 +120,7 @@ components:
           example: user@example.com
         password:
           type: string
-          example: password123
+          example: Motdepasse123!
 
     RefreshTokenRequest:
       type: object
@@ -3263,6 +3264,44 @@ paths:
                 $ref: '#/components/schemas/Message'
         '400':
           description: Contenu nécessaire
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{id}:
+    delete:
+      tags:
+        - Conversations
+      summary: Masquer une conversation pour l'utilisateur courant
+      description: Ne supprime pas les messages. La conversation reste visible pour l'autre participant et reapparait pour tous les participants au prochain message.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Conversation masquee localement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  hidden:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+        '403':
+          description: Acces refuse
           content:
             application/json:
               schema:

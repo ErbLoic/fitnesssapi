@@ -6,9 +6,16 @@ const prisma = require('../lib/prisma');
 const { issueAccessToken, issueRefreshToken } = require('../lib/tokens');
 const requireAuth = require('../middleware/requireAuth');
 
+const passwordPolicy = z.string()
+  .min(12, 'Le mot de passe doit contenir au moins 12 caracteres')
+  .regex(/[a-z]/, 'Le mot de passe doit contenir au moins une minuscule')
+  .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins une majuscule')
+  .regex(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre')
+  .regex(/[^A-Za-z0-9]/, 'Le mot de passe doit contenir au moins un caractere special');
+
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: passwordPolicy,
   name: z.string().min(1),
   age: z.number().int().min(13).max(120).optional(),
   heightCm: z.number().positive().max(300).optional(),

@@ -5,6 +5,28 @@ const { transformWorkoutFromApp, formatWorkoutForApp, hashWorkout } = require('.
 const prisma = require('../lib/prisma');
 router.use(requireAuth);
 
+async function findAccessibleWorkout(workoutId, userId) {
+  const workout = await prisma.workout.findUnique({
+    where: { id: workoutId },
+    include: { exerciseLogs: { include: { setLogs: true, cardioLogs: true } } },
+  });
+  if (!workout) return null;
+  if (workout.userId === userId) return workout;
+
+  const sharedByOwner = await prisma.message.findFirst({
+    where: {
+      workoutId,
+      senderId: workout.userId,
+      conversation: {
+        participants: { some: { userId } },
+      },
+    },
+    select: { id: true },
+  });
+
+  return sharedByOwner ? workout : null;
+}
+
 // GET /workouts/stats/summary  (before /:id)
 router.get('/stats/summary', async (req, res) => {
   try {
@@ -226,10 +248,7 @@ router.post('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     console.log(`[WORKOUTS] GET /:id - User: ${req.userId}, ID: ${req.params.id}`);
-    const workout = await prisma.workout.findFirst({
-      where: { id: req.params.id, userId: req.userId },
-      include: { exerciseLogs: { include: { setLogs: true, cardioLogs: true } } },
-    });
+    const workout = await findAccessibleWorkout(req.params.id, req.userId);
     if (!workout) return res.status(404).json({ error: 'NOT_FOUND', message: 'Séance introuvable' });
     console.log(`[WORKOUTS] GET /:id - SUCCESS: Found workout`);
     res.json(formatWorkoutForApp(workout));

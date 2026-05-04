@@ -50,7 +50,7 @@ router.get('/', requireAdmin, async (req, res) => {
 
     const versions = await prisma.appVersion.findMany({ orderBy: { platform: 'asc' } });
 
-    res.render('admin/dashboard', {
+    res.render(req.adminRole === 'admin' ? 'admin/dashboard' : 'admin/visitor-home', {
       stats: {
         users: userCount,
         workouts: workoutCount,

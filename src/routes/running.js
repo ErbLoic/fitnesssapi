@@ -5,6 +5,28 @@ const { transformRunningFromApp, formatRunningForApp, hashRunning } = require('.
 const prisma = require('../lib/prisma');
 router.use(requireAuth);
 
+async function findAccessibleRunningSession(runningId, userId) {
+  const session = await prisma.runningSession.findUnique({
+    where: { id: runningId },
+    include: { gpsPoints: { orderBy: { sortOrder: 'asc' } } },
+  });
+  if (!session) return null;
+  if (session.userId === userId) return session;
+
+  const sharedByOwner = await prisma.message.findFirst({
+    where: {
+      runningId,
+      senderId: session.userId,
+      conversation: {
+        participants: { some: { userId } },
+      },
+    },
+    select: { id: true },
+  });
+
+  return sharedByOwner ? session : null;
+}
+
 // GET /running/stats/summary
 router.get('/stats/summary', async (req, res) => {
   try {
@@ -173,10 +195,7 @@ router.post('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     console.log(`[RUNNING] GET /:id - User: ${req.userId}, ID: ${req.params.id}`);
-    const session = await prisma.runningSession.findFirst({
-      where: { id: req.params.id, userId: req.userId },
-      include: { gpsPoints: { orderBy: { sortOrder: 'asc' } } },
-    });
+    const session = await findAccessibleRunningSession(req.params.id, req.userId);
     if (!session) return res.status(404).json({ error: 'NOT_FOUND', message: 'Session introuvable' });
     console.log(`[RUNNING] GET /:id - SUCCESS: Found session with ${session.gpsPoints?.length || 0} GPS points`);
     res.json(formatRunningForApp(session));
