@@ -42,6 +42,8 @@ tags:
     description: Messagerie et conversations
   - name: Settings
     description: Paramètres utilisateur
+  - name: Devices
+    description: Tokens appareils et notifications push
   - name: Sync
     description: Synchronisation des données au téléphone
   - name: App Config
@@ -1153,6 +1155,138 @@ components:
         averageSteps:
           type: integer
 
+    StepDailySummary:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+          example: 2026-05-04
+        steps:
+          type: integer
+          example: 8432
+        calories:
+          type: number
+          nullable: true
+          example: 312.5
+        distanceKm:
+          type: number
+          nullable: true
+          example: 6.1
+        source:
+          type: string
+          example: android_step_counter
+        updatedAt:
+          type: string
+          format: date-time
+
+    StepDailySummaryUpdate:
+      type: object
+      required:
+        - steps
+      properties:
+        steps:
+          type: integer
+          minimum: 0
+          example: 8432
+        calories:
+          type: number
+          nullable: true
+          example: 312.5
+        distanceKm:
+          type: number
+          nullable: true
+          example: 6.1
+        source:
+          type: string
+          default: app
+          example: android_step_counter
+
+    StepRangeResponse:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              day:
+                type: string
+                format: date
+                example: 2026-05-04
+              steps:
+                type: integer
+                example: 8432
+              calories:
+                type: number
+                example: 312.5
+              distanceKm:
+                type: number
+                example: 6.1
+
+    StepSyncEvent:
+      type: object
+      required:
+        - clientEventId
+        - startedAt
+        - endedAt
+        - steps
+        - platform
+      properties:
+        clientEventId:
+          type: string
+          example: android-2026-05-04T09:00:00Z-2026-05-04T09:30:00Z
+        startedAt:
+          type: string
+          format: date-time
+          example: 2026-05-04T09:00:00.000Z
+        endedAt:
+          type: string
+          format: date-time
+          example: 2026-05-04T09:30:00.000Z
+        steps:
+          type: integer
+          minimum: 0
+          example: 728
+        rawCounterStart:
+          type: integer
+          nullable: true
+          example: 104502
+        rawCounterEnd:
+          type: integer
+          nullable: true
+          example: 105230
+        platform:
+          type: string
+          enum: [android, ios]
+          example: android
+        source:
+          type: string
+          default: pedometer
+          example: foreground_service
+
+    StepSyncEventsRequest:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/StepSyncEvent'
+
+    StepSyncEventsResponse:
+      type: object
+      properties:
+        inserted:
+          type: integer
+          example: 1
+        ignored:
+          type: integer
+          example: 0
+
     # ===== Weight Schemas =====
     WeightEntry:
       type: object
@@ -1403,6 +1537,8 @@ components:
           type: boolean
         notifMotivationalQuotes:
           type: boolean
+        notifMessages:
+          type: boolean
         themeDark:
           type: boolean
 
@@ -1425,8 +1561,55 @@ components:
           type: boolean
         notifMotivationalQuotes:
           type: boolean
+        notifMessages:
+          type: boolean
         themeDark:
           type: boolean
+
+    PushTokenRequest:
+      type: object
+      required:
+        - token
+        - platform
+      properties:
+        token:
+          type: string
+          example: fcm-token
+        platform:
+          type: string
+          enum: [android, ios, web]
+          example: android
+        deviceId:
+          type: string
+          nullable: true
+          example: pixel-8-pro
+        appVersion:
+          type: string
+          nullable: true
+          example: 0.0.3+3
+
+    DeletePushTokenRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          example: fcm-token
+
+    NotificationSettingsUpdate:
+      type: object
+      properties:
+        messages:
+          type: boolean
+          example: true
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
 
     # ===== App Config Schemas =====
     AppConfig:
@@ -2816,15 +2999,86 @@ paths:
           schema:
             type: string
             format: date
+        - name: summary
+          in: query
+          schema:
+            type: boolean
+          description: Force le format agrege { days } meme sans from/to.
       responses:
         '200':
           description: Liste des entrées
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DailySteps'
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/DailySteps'
+                  - $ref: '#/components/schemas/StepRangeResponse'
+
+  /steps/daily/{day}:
+    put:
+      tags:
+        - Steps
+      summary: Synchroniser un resume journalier idempotent
+      description: Remplace le total pour le couple (utilisateur, jour, source). Ne pas envoyer de delta ici.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: day
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+          example: 2026-05-04
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StepDailySummaryUpdate'
+      responses:
+        '200':
+          description: Resume sauvegarde
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepDailySummary'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /steps/sync-events:
+    post:
+      tags:
+        - Steps
+      summary: Synchroniser des evenements de pas
+      description: Insere uniquement les evenements non deja recus grace a clientEventId.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StepSyncEventsRequest'
+      responses:
+        '200':
+          description: Resultat de synchronisation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepSyncEventsResponse'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /steps/{date}:
     put:
@@ -3367,6 +3621,90 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserSettings'
+
+  /devices/push-token:
+    post:
+      tags:
+        - Devices
+      summary: Enregistrer ou mettre a jour un token push
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushTokenRequest'
+      responses:
+        '200':
+          description: Token enregistre
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Devices
+      summary: Desactiver un token push
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeletePushTokenRequest'
+      responses:
+        '200':
+          description: Token desactive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /me/notification-settings:
+    patch:
+      tags:
+        - Settings
+      summary: Mettre a jour les preferences de notifications serveur
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettingsUpdate'
+      responses:
+        '200':
+          description: Preferences mises a jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: boolean
+                    example: true
+        '400':
+          description: Erreur de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   # ===== SYNC =====
   /sync/all:
