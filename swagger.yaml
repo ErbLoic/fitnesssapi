@@ -261,6 +261,55 @@ components:
           type: integer
           minimum: 1
 
+    ProfileImageUploadUrlRequest:
+      type: object
+      properties:
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+          default: image/jpeg
+        expiresInMinutes:
+          type: integer
+          minimum: 1
+          maximum: 60
+          default: 15
+
+    ProfileImageUploadUrlResponse:
+      type: object
+      properties:
+        objectKey:
+          type: string
+          example: profile-images/550e8400-e29b-41d4-a716-446655440000/550e8400-e29b-41d4-a716-446655440001.jpg
+        uploadURL:
+          type: string
+          format: uri
+          example: https://account.r2.cloudflarestorage.com/bucket/profile-images/...
+        method:
+          type: string
+          example: PUT
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            Content-Type: image/jpeg
+        expiresAt:
+          type: string
+          format: date-time
+        publicUrl:
+          type: string
+          format: uri
+          example: https://pub-xxxx.r2.dev/profile-images/user-id/image.jpg
+
+    ProfileImageConfirmRequest:
+      type: object
+      required:
+        - objectKey
+      properties:
+        objectKey:
+          type: string
+          example: profile-images/550e8400-e29b-41d4-a716-446655440000/550e8400-e29b-41d4-a716-446655440001.jpg
+
     # ===== Running Schemas =====
     RunningSession:
       type: object
@@ -1926,6 +1975,82 @@ paths:
                 properties:
                   message:
                     type: string
+
+  /users/me/profile-image/upload-url:
+    post:
+      tags:
+        - Users
+      summary: Creer une URL d'upload direct pour ma photo de profil
+      description: Le mobile utilise ensuite uploadURL pour envoyer le fichier directement a Cloudflare R2 en PUT avec le binaire image en body.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileImageUploadUrlRequest'
+      responses:
+        '201':
+          description: URL d'upload direct creee
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileImageUploadUrlResponse'
+        '401':
+          description: Authentification requise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Cloudflare Images non configure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me/profile-image/confirm:
+    post:
+      tags:
+        - Users
+      summary: Confirmer ma nouvelle photo de profil
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileImageConfirmRequest'
+      responses:
+        '200':
+          description: Profil mis a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: imageId invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me/profile-image:
+    delete:
+      tags:
+        - Users
+      summary: Supprimer ma photo de profil
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profil mis a jour avec profileImageUrl null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
 
   /users/me/goals:
     patch:
