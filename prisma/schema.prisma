@@ -42,6 +42,8 @@ model User {
   workoutSessionDrafts WorkoutSessionDraft[]
   runningSessions   RunningSession[]
   dailySteps        DailySteps[]
+  stepDailySummaries StepDailySummary[]
+  stepSyncEvents    StepSyncEvent[]
   weightEntries     WeightEntry[]
   userBadges        UserBadge[]
   settings          UserSettings?
@@ -319,6 +321,44 @@ model DailySteps {
   @@map("daily_steps")
 }
 
+model StepDailySummary {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @db.Uuid
+  day        DateTime @db.Date
+  steps      Int      @default(0)
+  calories   Float?
+  distanceKm Float?
+  source     String   @default("app")
+  createdAt  DateTime @default(now()) @db.Timestamptz
+  updatedAt  DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day, source])
+  @@index([userId, day])
+  @@map("step_daily_summaries")
+}
+
+model StepSyncEvent {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @db.Uuid
+  clientEventId   String
+  startedAt       DateTime @db.Timestamptz
+  endedAt         DateTime @db.Timestamptz
+  steps           Int
+  rawCounterStart Int?
+  rawCounterEnd   Int?
+  platform        String   @db.VarChar(20)
+  source          String   @default("pedometer")
+  createdAt       DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientEventId])
+  @@index([userId, endedAt])
+  @@map("step_sync_events")
+}
+
 model HourlySteps {
   id           String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   dailyStepsId String @db.Uuid
@@ -381,6 +421,7 @@ model UserSettings {
   notifStepGoalAlerts     Boolean  @default(true)
   notifWeeklyProgress     Boolean  @default(true)
   notifMotivationalQuotes Boolean  @default(false)
+  notifMessages           Boolean  @default(true)
   themeDark               Boolean  @default(true)
   updatedAt               DateTime @default(now()) @updatedAt @db.Timestamptz
 
@@ -415,12 +456,18 @@ model PushToken {
   userId    String   @db.Uuid
   token     String
   platform  String   @db.VarChar(10)
+  deviceId  String?
+  appVersion String?
+  enabled   Boolean  @default(true)
+  lastSeenAt DateTime @default(now()) @db.Timestamptz
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, token])
+  @@unique([token])
+  @@index([userId])
+  @@index([enabled])
   @@map("push_tokens")
 }
 

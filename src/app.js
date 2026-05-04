@@ -115,6 +115,8 @@ app.use('/steps',    require('./routes/steps'));
 app.use('/weight',   require('./routes/weight'));
 app.use('/badges',   require('./routes/badges'));
 app.use('/settings', require('./routes/settings'));
+app.use('/devices',  require('./routes/devices'));
+app.use('/me',       require('./routes/me'));
 app.use('/sync',           require('./routes/sync'));
 app.use('/app',           require('./routes/appConfig'));
 app.use('/conversations', require('./routes/messages'));
@@ -127,6 +129,8 @@ app.use('/',              require('./routes/legal'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/programs', require('./routes/programs'));
 app.use('/api/workout-sessions', require('./routes/workoutSessions'));
+app.use('/api/devices', require('./routes/devices'));
+app.use('/api/me', require('./routes/me'));
 
 // ── Admin panel ───────────────────────────────────────────────────
 app.use('/admin', adminIpGuard, adminNoCache, require('./routes/admin/index'));

@@ -2,6 +2,7 @@ const router = require('express').Router();
 const requireAuth = require('../middleware/requireAuth');
 const prisma = require('../lib/prisma');
 const { encryptMessageBody, decryptMessage } = require('../lib/messageCrypto');
+const { sendMessagePush } = require('../lib/messagePush');
 
 router.use(requireAuth);
 
@@ -166,6 +167,15 @@ router.post('/:id/messages', async (req, res) => {
   if (!await assertOwnsSharedResources({ userId: req.userId, workoutId, runningId }, res)) return;
 
   const now = new Date();
+  const conversation = await prisma.conversation.findUnique({
+    where: { id },
+    include: {
+      participants: {
+        include: { user: { select: { id: true, name: true } } },
+      },
+    },
+  });
+
   const message = await prisma.$transaction(async (tx) => {
     const created = await tx.message.create({
       data: {
@@ -192,7 +202,27 @@ router.post('/:id/messages', async (req, res) => {
     return created;
   });
 
-  res.status(201).json(decryptMessage(message));
+  const responseMessage = decryptMessage(message);
+  res.status(201).json(responseMessage);
+
+  const recipients = (conversation?.participants || []).filter((participant) => participant.userId !== req.userId);
+  for (const recipient of recipients) {
+    sendMessagePush({
+      recipientUserId: recipient.userId,
+      conversationId: id,
+      messageId: message.id,
+      senderId: req.userId,
+      senderName: message.sender?.name || 'FitnessPro',
+      body: responseMessage.body,
+      createdAt: message.createdAt,
+    }).catch((error) => {
+      console.warn('[PUSH] Message push failed', {
+        error: error.message,
+        messageId: message.id,
+        recipientUserId: recipient.userId,
+      });
+    });
+  }
 });
 
 // DELETE /conversations/:id - masquer la conversation pour l'utilisateur courant.

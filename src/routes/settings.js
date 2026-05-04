@@ -22,6 +22,7 @@ router.patch('/', async (req, res) => {
     notifStepGoalAlerts: z.boolean().optional(),
     notifWeeklyProgress: z.boolean().optional(),
     notifMotivationalQuotes: z.boolean().optional(),
+    notifMessages: z.boolean().optional(),
     themeDark: z.boolean().optional(),
   });
   const parsed = schema.safeParse(req.body);
