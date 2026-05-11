@@ -126,6 +126,7 @@ app.use('/errors',        require('./routes/errors'));
 app.use('/',              require('./routes/legal'));
 
 // Aliases avec prefixe /api pour les nouveaux endpoints mobiles documentes.
+app.use('/api/manifest', require('./routes/manifest'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/programs', require('./routes/programs'));
 app.use('/api/workout-sessions', require('./routes/workoutSessions'));
